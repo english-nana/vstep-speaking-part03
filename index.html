@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VSTEP Speaking Part 3 - Practice Platform</title>
+    <!-- Google Fonts: Roboto Serif -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Serif:ital,opsz,wght@0,8..144,300;0,8..144,400;0,8..144,500;0,8..144,600;0,8..144,700;0,8..144,800;0,8..144,900;1,8..144,300;1,8..144,400;1,8..144,700;1,8..144,800;1,8..144,900&display=swap" rel="stylesheet">
+    <!-- Nhúng file CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Header cho Mobile -->
+    <header id="mobile-header">
+        <button id="mobile-menu-btn" class="mobile-nav-btn" onclick="openMobileSidebar()" title="Mở danh sách đề">
+            <span class="menu-icon">☰</span>
+            <span class="menu-text">Đề bài</span>
+        </button>
+        <div class="mobile-title-box">
+            <span class="mobile-badge">SPEAKING PART 3</span>
+            <h2 id="mobile-current-title" class="mobile-current-title">Lý thuyết chung</h2>
+        </div>
+        <div class="mobile-nav-actions">
+            <button id="mobile-prev-btn" class="mobile-nav-arrow" onclick="prevTest()" title="Đề trước">❮</button>
+            <button id="mobile-next-btn" class="mobile-nav-arrow" onclick="nextTest()" title="Đề tiếp theo">❯</button>
+        </div>
+    </header>
+
+    <!-- Lớp phủ mờ nền khi mở sidebar trên mobile -->
+    <div id="sidebar-backdrop" onclick="closeMobileSidebar()"></div>
+
+    <!-- Cột trái: Danh sách đề -->
+    <aside id="left-panel">
+        <div class="panel-header">
+            <div class="brand-box">
+                <h3 class="main-title">VSTEP SPEAKING PART 03</h3>
+                <span class="sub-badge">Topic Development</span>
+            </div>
+            <button class="mobile-close-btn" onclick="closeMobileSidebar()" title="Đóng danh sách đề">✕</button>
+        </div>
+        <div class="test-list" id="test-list">
+            <!-- Render via JS -->
+        </div>
+    </aside>
+
+    <!-- Cột giữa: Nội dung -->
+    <main id="center-panel">
+        <!-- Đề bài -->
+        <div class="content-card">
+            <div class="section-header">
+                <div>
+                    <h3>Nội dung đề bài</h3>
+                    <span class="hint" style="margin-bottom: 0; margin-top: 5px;">💡 Bấm vào đề bài để xem/ẩn bản dịch tiếng Việt</span>
+                </div>
+            </div>
+            <div class="content-body">
+                <div class="text-content clickable-text" onclick="toggleTranslation('prompt-vn')">
+                    <p id="prompt-en">Vui lòng chọn một đề bài ở cột bên trái.</p>
+                </div>
+                <div id="prompt-vn" class="translation"></div>
+            </div>
+        </div>
+
+        <!-- Từ vựng & Ý tưởng -->
+        <div class="content-card">
+            <div class="section-header">
+                <h3>Từ vựng & Ý tưởng</h3>
+                <button class="btn btn-outline" onclick="toggleContent('vocab-content', this)">Hiện / Ẩn</button>
+            </div>
+            <div id="vocab-content" class="content-body text-content hidden">
+                <!-- Render via JS -->
+            </div>
+        </div>
+
+        <!-- Bài mẫu -->
+        <div class="content-card">
+            <div class="section-header">
+                <div>
+                    <h3>Bài nói mẫu</h3>
+                    <span class="hint" style="margin-bottom: 0; margin-top: 5px;">💡 Bấm vào từng đoạn tiếng Anh để xem/ẩn bản dịch tiếng Việt tương ứng</span>
+                </div>
+                <button class="btn btn-outline" onclick="toggleContent('sample-content-wrapper', this)">Hiện / Ẩn</button>
+            </div>
+            <div id="sample-content-wrapper" class="content-body hidden">
+                <div id="sample-container" class="text-content">
+                    <!-- Render via JS -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Cột phải: Đồng hồ & Ghi chú -->
+    <aside id="right-panel">
+        <div id="toggle-right" onclick="toggleRightPanel()" title="Mở / Đóng Teacher's Zone">
+            <span class="icon">▶</span>
+            <span class="text">TEACHER'S ZONE</span>
+        </div>
+        <!-- Đồng hồ -->
+        <div class="timer-section">
+            <div class="timer-card">
+                <div class="timer-card-header">
+                    <div class="timer-status-pill" id="timer-status-pill">
+                        <span class="status-indicator"></span>
+                        <span id="timer-status-text">SẴN SÀNG</span>
+                    </div>
+                    <span class="timer-mode-tag" id="timer-mode-tag">5:00</span>
+                </div>
+                <div class="timer-digits-box">
+                    <div class="digit-group">
+                        <span class="digit-val" id="timer-min">05</span>
+                        <span class="digit-lbl">PHÚT</span>
+                    </div>
+                    <span class="digit-colon">:</span>
+                    <div class="digit-group">
+                        <span class="digit-val" id="timer-sec">00</span>
+                        <span class="digit-lbl">GIÂY</span>
+                    </div>
+                </div>
+                <div class="timer-progress-track">
+                    <div class="timer-progress-bar" id="timer-bar"></div>
+                </div>
+            </div>
+            
+            <div class="timer-controls">
+                <button id="btn-start" class="btn-start-action" onclick="toggleTimer()">
+                    <span class="btn-icon">▶</span>
+                    <span class="btn-label">Bắt đầu</span>
+                </button>
+                <div class="timer-presets">
+                    <button class="btn-preset" onclick="setTimer(240)" title="Đặt 4 phút">4 Phút</button>
+                    <button class="btn-preset" onclick="setTimer(300)" title="Đặt 5 phút">5 Phút</button>
+                    <button class="btn-preset btn-preset-reset" onclick="resetTimer()" title="Đặt lại đồng hồ">↺ Reset</button>
+                </div>
+            </div>
+        </div>
+        <!-- Ghi chú của giáo viên -->
+        <div class="notes-section">
+            <h3>Ghi chú của thầy</h3>
+            <textarea id="teacher-notes" placeholder="Nhập ghi chú tại đây..."></textarea>
+        </div>
+    </aside>
+
+    <!-- Nhúng file Dữ liệu trước -->
+    <script src="data.js"></script>
+    <!-- Nhúng file Logic xử lý sau -->
+    <script src="app.js"></script>
+</body>
+</html>
