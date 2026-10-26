@@ -49,16 +49,16 @@
     <!-- Cột giữa: Nội dung -->
     <main id="center-panel">
         <!-- Đề bài -->
-        <div class="content-card">
-            <div class="section-header">
+        <div class="content-card" id="prompt-card">
+            <div class="section-header" id="prompt-section-header">
                 <div>
                     <h3>Nội dung đề bài</h3>
                     <span class="hint" style="margin-bottom: 0; margin-top: 5px;">💡 Bấm vào đề bài để xem/ẩn bản dịch tiếng Việt</span>
                 </div>
             </div>
-            <div class="content-body">
-                <div class="text-content clickable-text" onclick="toggleTranslation('prompt-vn')">
-                    <p id="prompt-en">Vui lòng chọn một đề bài ở cột bên trái.</p>
+            <div class="content-body" id="prompt-content-body">
+                <div class="text-content" id="prompt-container">
+                    <div id="prompt-en">Vui lòng chọn một đề bài ở cột bên trái.</div>
                 </div>
                 <div id="prompt-vn" class="translation"></div>
             </div>

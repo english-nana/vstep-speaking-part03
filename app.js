@@ -246,15 +246,20 @@ function loadTest(id, element) {
     const sampleEl = document.getElementById('sample-content-wrapper');
     if(!sampleEl.classList.contains('hidden') && id !== 'theory') toggleContent('sample-content-wrapper', sampleEl.previousElementSibling.querySelector('button'));
 
-    // Cập nhật tiêu đề Card cho Lý thuyết chung
+    // Cập nhật tiêu đề Card cho Lý thuyết chung vs Đề bài
     const promptCard = document.getElementById('prompt-en').closest('.content-card');
+    const promptSectionHeader = document.getElementById('prompt-section-header');
     const vocabCard = document.getElementById('vocab-content').closest('.content-card');
     const sampleCard = document.getElementById('sample-content-wrapper').closest('.content-card');
 
     if (id === 'theory') {
-        promptCard.querySelector('.section-header h3').innerText = 'Thông tin chung';
-        const promptHint = promptCard.querySelector('.section-header .hint');
-        if(promptHint) promptHint.style.display = 'none';
+        promptCard.classList.remove('prompt-card-redesigned');
+        if (promptSectionHeader) {
+            promptSectionHeader.style.display = 'flex';
+            promptSectionHeader.querySelector('h3').innerText = 'Thông tin chung';
+            const promptHint = promptSectionHeader.querySelector('.hint');
+            if (promptHint) promptHint.style.display = 'none';
+        }
         
         const promptContainer = document.getElementById('prompt-en').parentElement;
         if (promptContainer) {
@@ -270,14 +275,15 @@ function loadTest(id, element) {
 
         sampleCard.style.display = 'none';
     } else {
-        promptCard.querySelector('.section-header h3').innerText = 'Nội dung đề bài';
-        const promptHint = promptCard.querySelector('.section-header .hint');
-        if(promptHint) promptHint.style.display = 'block';
+        promptCard.classList.add('prompt-card-redesigned');
+        if (promptSectionHeader) {
+            promptSectionHeader.style.display = 'none';
+        }
         
         const promptContainer = document.getElementById('prompt-en').parentElement;
         if (promptContainer) {
-            promptContainer.classList.add('clickable-text');
-            promptContainer.style.cursor = 'pointer';
+            promptContainer.classList.remove('clickable-text');
+            promptContainer.style.cursor = 'default';
         }
         
         vocabCard.querySelector('.section-header h3').innerText = 'Từ vựng & Ý tưởng';
@@ -295,6 +301,56 @@ function loadTest(id, element) {
         
         sampleCard.style.display = 'block';
     }
+}
+
+// --- TƯƠNG TÁC MINDMAP & KHUNG ĐỀ BÀI MỚI ---
+window.toggleNodeVn = function(nodeEl) {
+    if (!nodeEl) return;
+    nodeEl.classList.toggle('vn-hidden');
+};
+
+window.toggleTopicHeadlineVn = function(blockEl) {
+    if (!blockEl) return;
+    blockEl.classList.toggle('vn-shown');
+};
+
+// --- TƯƠNG TÁC TỪ VỰNG & Ý TƯỞNG MỚI (TIẾNG VIỆT -> LẬT TIẾNG ANH) ---
+window.toggleExpStep = function(stepEl) {
+    if (!stepEl) return;
+    stepEl.classList.toggle('show-en');
+    syncExpToggleAllBtn(stepEl.closest('.exp-section'));
+};
+
+window.toggleExpHeader = function(headerEl) {
+    if (!headerEl) return;
+    headerEl.classList.toggle('show-en');
+    syncExpToggleAllBtn(headerEl.closest('.exp-section'));
+};
+
+window.toggleAllExpEn = function(btnEl) {
+    const section = btnEl.closest('.exp-section');
+    if (!section) return;
+    const targets = section.querySelectorAll('.exp-step-card, .exp-card-header');
+    const allShown = Array.from(targets).every(el => el.classList.contains('show-en'));
+
+    targets.forEach(el => {
+        if (allShown) {
+            el.classList.remove('show-en');
+        } else {
+            el.classList.add('show-en');
+        }
+    });
+    syncExpToggleAllBtn(section);
+};
+
+function syncExpToggleAllBtn(section) {
+    if (!section) return;
+    const btn = section.querySelector('.exp-toggle-all-btn');
+    if (!btn) return;
+    const targets = section.querySelectorAll('.exp-step-card, .exp-card-header');
+    const allShown = targets.length > 0 && Array.from(targets).every(el => el.classList.contains('show-en'));
+    btn.innerText = allShown ? 'Ẩn tất cả tiếng Anh' : 'Hiện tất cả tiếng Anh';
+    btn.classList.toggle('active', allShown);
 }
 
 function toggleRightPanel() {

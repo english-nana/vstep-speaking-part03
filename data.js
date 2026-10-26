@@ -1,112 +1,110 @@
-const generateMindmap = (center, top, left, right, bottom) => {
+const generatePromptCard = ({ testNumber, topicEn, topicVn, centerEn, centerVn, idea1, idea2, idea3 }) => {
+    const renderNode = (num, idea, posClass, isOwn = false) => `
+        <div class="mm-node ${posClass} ${isOwn ? 'mm-node-own' : ''}" onclick="event.stopPropagation(); window.toggleNodeVn(this);" title="Bấm để ẩn/hiện nghĩa tiếng Việt">
+            <span class="mm-badge ${isOwn ? 'mm-badge-own' : 'mm-badge-primary'}">${num}</span>
+            <div class="mm-title-en">${idea.en}</div>
+            <div class="mm-title-vn">${idea.vn}</div>
+            <span class="mm-pos-tag ${isOwn ? 'mm-tag-own' : 'mm-tag-primary'}">${idea.tag}</span>
+        </div>
+    `;
+
     return `
-    <div class="mindmap">
-        <div style="grid-column: 3; grid-row: 1;" class="mm-node">${top}</div>
-        <div style="grid-column: 3; grid-row: 2;" class="mm-arrow arrow-up">
-            <svg viewBox="0 0 24 40" width="24" height="40"><path d="M12 0 L24 12 L16 12 L16 40 L8 40 L8 12 L0 12 Z" fill="#fcd3d3" stroke="#1e293b" stroke-width="1.5"/></svg>
+    <div class="prompt-redesign-wrapper">
+        <div class="prompt-top-bar">
+            <div class="prompt-badge-group">
+                <span class="prompt-test-badge">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
+                    <span>ĐỀ SỐ ${testNumber}</span>
+                </span>
+            </div>
         </div>
-        <div style="grid-column: 1; grid-row: 3;" class="mm-node">${left}</div>
-        <div style="grid-column: 2; grid-row: 3;" class="mm-arrow arrow-left">
-            <svg viewBox="0 0 40 24" width="40" height="24"><path d="M0 12 L12 0 L12 8 L40 8 L40 16 L12 16 L12 24 Z" fill="#fcd3d3" stroke="#1e293b" stroke-width="1.5"/></svg>
+
+        <div class="prompt-topic-block" onclick="event.stopPropagation(); window.toggleTopicHeadlineVn(this);" title="Bấm để ẩn/hiện dịch câu chủ đề">
+            <h2 class="prompt-topic-en">TOPIC: ${topicEn}</h2>
+            <p class="prompt-topic-vn">Chủ đề: ${topicVn}</p>
         </div>
-        <div style="grid-column: 3; grid-row: 3;" class="mm-node mm-center">${center}</div>
-        <div style="grid-column: 4; grid-row: 3;" class="mm-arrow arrow-right">
-            <svg viewBox="0 0 40 24" width="40" height="24"><path d="M40 12 L28 0 L28 8 L0 8 L0 16 L28 16 L28 24 Z" fill="#fcd3d3" stroke="#1e293b" stroke-width="1.5"/></svg>
+
+        <div class="mindmap-section-wrapper">
+            <div class="mindmap-outer-box">
+                <div class="mindmap">
+                    ${renderNode(1, idea1, 'mm-pos-top')}
+                    ${renderNode(4, { en: '[Your own idea]', vn: 'Ý kiến riêng của bạn', tag: 'Tự do' }, 'mm-pos-left', true)}
+                    <div class="mm-center mm-pos-center" onclick="event.stopPropagation(); window.toggleNodeVn(this);" title="Bấm để ẩn/hiện nghĩa tiếng Việt">
+                        <span class="mm-center-label">CHỦ ĐỀ</span>
+                        <div class="mm-center-en">${centerEn}</div>
+                        <div class="mm-center-vn">${centerVn}</div>
+                    </div>
+                    ${renderNode(2, idea2, 'mm-pos-right')}
+                    ${renderNode(3, idea3, 'mm-pos-bottom')}
+                </div>
+            </div>
         </div>
-        <div style="grid-column: 5; grid-row: 3;" class="mm-node">${right}</div>
-        <div style="grid-column: 3; grid-row: 4;" class="mm-arrow arrow-down">
-            <svg viewBox="0 0 24 40" width="24" height="40"><path d="M12 40 L0 28 L8 28 L8 0 L16 0 L16 28 L24 28 Z" fill="#fcd3d3" stroke="#1e293b" stroke-width="1.5"/></svg>
-        </div>
-        <div style="grid-column: 3; grid-row: 5;" class="mm-node">${bottom}</div>
     </div>
     `;
 };
 
-const generateVocabItem = (number, title, flowArray) => {
-    const renderStyledText = (text) => {
-        return text
-            .replace(/\(not\)/gi, '(X)')
-            .replace(/\(không\)/gi, '(X)')
-            .replace(/\(X\)/g, '<strong style="color: #ff003c; text-shadow: 0 0 5px rgba(255,0,60,0.5); font-weight: bold;">(X)</strong>');
-    };
+const ROLE_STYLE_MAP = {
+    'Giải thích': 'role-explain',
+    'Lý do': 'role-explain',
+    'Chi tiết': 'role-detail',
+    'Mở rộng': 'role-detail',
+    'Ví dụ': 'role-example',
+    'Kết quả': 'role-result',
+    'Tác động': 'role-result'
+};
 
-    const createBubble = (enPart, vnPart, isExample) => {
-        const bgStyle = isExample ? 'background-color: #fee2e2; border: 1px solid #fca5a5; color: #991b1b;' : '';
-        const enHtml = renderStyledText(enPart.trim());
-        let html = '';
-        if (vnPart) {
-            const vnHtml = renderStyledText(vnPart.trim());
-            html = `
-            <div class="flow-step" style="display: inline-flex; flex-direction: column; cursor: pointer; vertical-align: middle; ${bgStyle}" onclick="var vn = this.querySelector('.vocab-vn'); if(vn) { vn.style.display = vn.style.display === 'block' ? 'none' : 'block'; }">
-                <span class="vocab-en">${enHtml}</span>
-                <span class="vocab-vn" style="display: none; color: #0f766e; font-size: 13.5px; background: #f0fdfa; border-radius: 4px; padding: 2px 8px; margin-top: 4px; white-space: normal; max-width: 100%; border: 1px solid #ccfbf1;">${vnHtml}</span>
-            </div>`;
-        } else {
-            html = `<div class="flow-step" style="${bgStyle}"><span class="vocab-en">${enHtml}</span></div>`;
-        }
-        return html;
-    };
+const generateIdeaExpansion = (ideas) => {
+    const cardsHtml = ideas.map(idea => {
+        const stepsHtml = idea.steps.map((step, idx) => {
+            const roleClass = ROLE_STYLE_MAP[step.role] || 'role-explain';
+            const arrowHtml = idx < idea.steps.length - 1
+                ? `<div class="exp-arrow" aria-hidden="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+                   </div>`
+                : '';
 
-    const flowHtml = flowArray.map((step, index) => {
-        let stepHtml = '';
-        if (typeof step === 'string') {
-            const partsEn = step.split('=>');
-            let isExampleFlow = false;
-            const bubbles = partsEn.map(p => {
-                if (p.trim().startsWith('Ex:')) isExampleFlow = true;
-                return createBubble(p, '', isExampleFlow);
-            });
-            stepHtml = bubbles.join('<div class="flow-arrow" style="vertical-align: middle;">➔</div>');
-        } else {
-            const partsEn = step.en.split('=>');
-            const partsVn = step.vn ? step.vn.split('=>') : [];
-            let isExampleFlow = false;
-            const bubbles = partsEn.map((p, i) => {
-                if (p.trim().startsWith('Ex:')) isExampleFlow = true;
-                return createBubble(p, partsVn[i] || '', isExampleFlow);
-            });
-            stepHtml = bubbles.join('<div class="flow-arrow" style="vertical-align: middle;">➔</div>');
-        }
-        return stepHtml + (index < flowArray.length - 1 ? `<div class="flow-arrow" style="vertical-align: middle;">➔</div>` : '');
+            return `
+                <div class="exp-step-card" onclick="window.toggleExpStep(this)">
+                    <span class="exp-role-badge ${roleClass}">${step.role}</span>
+                    <div class="exp-step-vn">${step.vn}</div>
+                    <div class="exp-step-en">
+                        <span class="exp-en-tag">EN</span>
+                        <span>${step.en}</span>
+                    </div>
+                </div>
+                ${arrowHtml}
+            `;
+        }).join('');
+
+        return `
+            <div class="exp-card">
+                <div class="exp-card-header" onclick="window.toggleExpHeader(this)" title="Bấm để xem/ẩn cụm tiếng Anh mở ý">
+                    <div class="exp-header-main">
+                        <span class="exp-num-badge">${idea.num}</span>
+                        <span class="exp-idea-vn">${idea.titleVn}</span>
+                    </div>
+                    <span class="exp-idea-en-placeholder">Xem cụm mở ý</span>
+                    <span class="exp-idea-en">➔ ${idea.coreEn}</span>
+                </div>
+                <div class="exp-steps-flow">
+                    ${stepsHtml}
+                </div>
+            </div>
+        `;
     }).join('');
-    
+
     return `
-    <div class="idea-card" style="position: relative;">
-        <div style="position: absolute; top: 12px; right: 15px; display: flex; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; z-index: 10;">
-            <span onclick="event.stopPropagation(); if(window.changeCardScale) changeCardScale(this, -0.15);" style="padding: 2px 10px; cursor: pointer; background: #f1f5f9; color: #64748b; font-weight: normal; font-size: 15px; user-select: none; border-right: 1px solid #cbd5e1;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'" title="Thu nhỏ">-</span>
-            <span onclick="event.stopPropagation(); if(window.changeCardScale) changeCardScale(this, 0.15);" style="padding: 2px 10px; cursor: pointer; background: #f1f5f9; color: #64748b; font-weight: normal; font-size: 15px; user-select: none;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'" title="Phóng to">+</span>
+        <div class="exp-section">
+            <div class="exp-toolbar">
+                <span class="exp-hint">💡 Bấm vào từng bước tư duy tiếng Việt để lật xem cụm tiếng Anh tương ứng</span>
+                <button type="button" class="exp-toggle-all-btn" onclick="window.toggleAllExpEn(this)">Hiện tất cả tiếng Anh</button>
+            </div>
+            <div class="exp-cards-list">
+                ${cardsHtml}
+            </div>
         </div>
-        <div class="idea-title"><span class="idea-number">${number}</span> ${title}</div>
-        <div class="idea-flow" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0;">
-            ${flowHtml}
-        </div>
-    </div>
     `;
 };
-
-// Add changeCardScale globally if not exists
-if (typeof window !== 'undefined' && !window.changeCardScale) {
-    window.changeCardScale = function(btn, delta) {
-        var card = btn.closest('.idea-card');
-        if (!card) return;
-        var currentScale = parseFloat(card.getAttribute('data-scale')) || 1;
-        var newScale = Math.max(0.5, Math.min(3, currentScale + delta));
-        card.setAttribute('data-scale', newScale);
-        
-        var steps = card.querySelectorAll('.flow-step');
-        steps.forEach(function(s) { s.style.fontSize = (14.5 * newScale) + 'px'; });
-        
-        var vns = card.querySelectorAll('.vocab-vn');
-        vns.forEach(function(s) { s.style.fontSize = (13.5 * newScale) + 'px'; });
-        
-        var arrows = card.querySelectorAll('.flow-arrow');
-        arrows.forEach(function(a) { a.style.fontSize = (16 * newScale) + 'px'; });
-        
-        var ens = card.querySelectorAll('.vocab-en');
-        ens.forEach(function(s) { s.style.fontSize = (14.5 * newScale) + 'px'; });
-    };
-}
-
 
 const mockTests = [
     {
@@ -163,28 +161,85 @@ const mockTests = [
         id: "test1",
         title: "Topic 01 🎵",
         topic: "Musical education plays a vital role in schools.",
-        promptEn: `<strong>Topic:</strong> Musical education plays a vital role in schools.<br>` +
-            generateMindmap('Musical education', 'memory development', 'emotional development', 'your own ideas', 'language development'),
-        promptVn: `<strong>Chủ đề:</strong> Giáo dục âm nhạc đóng vai trò quan trọng trong trường học.<br>` +
-            generateMindmap('Giáo dục âm nhạc', 'phát triển trí nhớ', 'phát triển cảm xúc', 'ý tưởng của bạn', 'phát triển ngôn ngữ'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Develop memory', [
-                        'learn how to sing a song + learn a new instrument',
-                        'remember the lyrics and the melody',
-                        'remember longer'
-                    ])}
-                    ${generateVocabItem('02', 'Develop emotions', [
-                        'express emotions (anger, happiness, sadness) + feel relaxed after long hours of studying'
-                    ])}
-                    ${generateVocabItem('03', 'Learn languages', [
-                        'sing English songs',
-                        'learn new vocabulary + improve listening skills + improve pronunciation'
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '01',
+            topicEn: 'Musical education plays a vital role in schools.',
+            topicVn: 'Giáo dục âm nhạc đóng vai trò quan trọng trong trường học.',
+            centerEn: 'Musical education',
+            centerVn: 'Giáo dục âm nhạc',
+            idea1: { en: 'Memory development', vn: 'Phát triển trí nhớ', tag: 'Cụm danh từ' },
+            idea2: { en: 'Emotional development', vn: 'Phát triển cảm xúc', tag: 'Cụm danh từ' },
+            idea3: { en: 'Language development', vn: 'Phát triển ngôn ngữ', tag: 'Cụm danh từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Giáo dục âm nhạc đóng vai trò quan trọng trong trường học.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Phát triển trí nhớ',
+                coreEn: 'help students develop memory',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Khi học hát hoặc tập chơi một nhạc cụ mới',
+                        en: 'learn how to sing a song or play a new instrument'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Học sinh phải ghi nhớ cả lời bài hát lẫn giai điệu',
+                        en: 'need to remember the lyrics and the melody'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Nhờ đó rèn luyện não bộ để nhớ tốt và lâu hơn',
+                        en: 'train their brains to remember longer'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Phát triển cảm xúc',
+                coreEn: 'help students develop emotions',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Âm nhạc giúp các em giải tỏa và bộc lộ cảm xúc (vui, buồn...)',
+                        en: 'help people express their emotions (happiness, sadness...)'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Nghe hay hát một bài yêu thích sau những giờ học căng thẳng',
+                        en: 'listen to music after long stressful hours of studying'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Đầu óc được thư giãn và giữ tinh thần tích cực hơn',
+                        en: 'feel relaxed and stay more positive'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Phát triển ngôn ngữ',
+                coreEn: 'a great way to learn languages',
+                steps: [
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Chẳng hạn khi nghe và hát theo các bài hát tiếng Anh',
+                        en: 'listen to and sing English songs'
+                    },
+                    {
+                        role: 'Giải thích',
+                        vn: 'Tiếp thu thêm nhiều từ vựng mới một cách rất tự nhiên',
+                        en: 'learn new English vocabulary naturally'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Cải thiện rõ rệt cả kỹ năng nghe lẫn phát âm',
+                        en: 'improve listening skills and pronunciation'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about musical education.",
@@ -212,31 +267,85 @@ const mockTests = [
         id: "test2",
         title: "Topic 02 👮",
         topic: "The crime rate can be reduced in several ways.",
-        promptEn: `<strong>Topic:</strong> The crime rate can be reduced in several ways.<br>` +
-            generateMindmap('The crime rate', 'Education', 'Install camera in public places', 'your own ideas', 'Increase employment opportunities'),
-        promptVn: `<strong>Chủ đề:</strong> Tỷ lệ tội phạm có thể được giảm bằng nhiều cách.<br>` +
-            generateMindmap('Tỷ lệ tội phạm', 'Giáo dục', 'Lắp camera ở nơi công cộng', 'ý tưởng của bạn', 'Tăng cơ hội việc làm'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Education', [
-                        'understand what is right and wrong',
-                        'be well-educated',
-                        'be less likely to commit crimes'
-                    ])}
-                    ${generateVocabItem('02', 'Install cameras in public places', [
-                        'know they are being watched',
-                        'be less likely to do illegal activities',
-                        'make people feel safe'
-                    ])}
-                    ${generateVocabItem('03', 'Increase employment opportunities', [
-                        'have jobs',
-                        'earn money in a legal way + support themselves',
-                        'don’t need to commit crimes to survive'
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '02',
+            topicEn: 'The crime rate can be reduced in several ways.',
+            topicVn: 'Tỷ lệ tội phạm có thể được giảm bằng nhiều cách.',
+            centerEn: 'The crime rate',
+            centerVn: 'Tỷ lệ tội phạm',
+            idea1: { en: 'Education', vn: 'Giáo dục', tag: 'Danh từ' },
+            idea2: { en: 'Install camera in public places', vn: 'Lắp camera ở nơi công cộng', tag: 'Động từ' },
+            idea3: { en: 'Increase employment opportunities', vn: 'Tăng cơ hội việc làm', tag: 'Động từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Tỷ lệ tội phạm có thể được giảm bằng nhiều cách.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Giáo dục',
+                coreEn: 'educate people better',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Giúp mọi người phân biệt rõ điều gì là đúng, điều gì là sai',
+                        en: 'understand what is right and wrong'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Hiểu được hậu quả nghiêm trọng nếu làm trái pháp luật',
+                        en: 'know the bad results of breaking the law'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Biết suy nghĩ kỹ hơn và tránh xa các hành vi phạm tội',
+                        en: 'think carefully and stay away from crimes'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Lắp camera ở nơi công cộng',
+                coreEn: 'install cameras in public places',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Kẻ xấu biết mình đang bị ghi hình ở ngoài đường, cửa hàng...',
+                        en: 'bad people know cameras are watching them'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Sợ bị cảnh sát phát hiện và bắt giữ nên không dám làm bậy',
+                        en: 'feel afraid of the police and do not dare to steal'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Người dân đi lại ngoài đường cảm thấy yên tâm, an toàn hơn',
+                        en: 'make everyone feel safe when going out'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Tăng cơ hội việc làm',
+                coreEn: 'create more jobs for people',
+                steps: [
+                    {
+                        role: 'Lý do',
+                        vn: 'Nhiều người đi trộm cắp chỉ vì thất nghiệp, túng thiếu tiền bạc',
+                        en: 'some people steal because they have no job and no money'
+                    },
+                    {
+                        role: 'Giải thích',
+                        vn: 'Có việc làm ổn định giúp họ tự kiếm tiền nuôi sống bản thân',
+                        en: 'have a stable job to earn money and support themselves'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Không cần phải làm chuyện phạm pháp để kiếm sống nữa',
+                        en: 'do not need to commit crimes to survive'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about the crime rate.",
@@ -264,32 +373,85 @@ const mockTests = [
         id: "test3",
         title: "Topic 03 🧹",
         topic: "Housemaids are becoming more common in many urban families.",
-        promptEn: `<strong>Topic:</strong> Housemaids are becoming more common in many urban families.<br>` +
-            generateMindmap('Housemaids', 'More relaxing time', 'A tidier home', 'your own ideas', 'Better social skills for family members'),
-        promptVn: `<strong>Chủ đề:</strong> Người giúp việc gia đình đang trở nên phổ biến hơn ở nhiều gia đình thành thị.<br>` +
-            generateMindmap('Người giúp việc gia đình', 'Có thêm thời gian thư giãn', 'Ngôi nhà gọn gàng hơn', 'ý tưởng của bạn', 'Kỹ năng xã hội tốt hơn cho các thành viên'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Family members will have more relaxing time', [
-                        'many people',
-                        'busy with their work',
-                        'don’t have much time to do the housework',
-                        'hire a housemaid',
-                        'have more time to rest'
-                    ])}
-                    ${generateVocabItem('02', 'A housemaid can make the house tidier', [
-                        'do the housework (cleaning the house + washing clothes + washing dishes)',
-                        'make the house cleaner and tidier'
-                    ])}
-                    ${generateVocabItem('03', 'Having a housemaid helps family members develop social skills', [
-                        'children',
-                        'learn how to communicate + behave politely',
-                        'become more friendly'
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '03',
+            topicEn: 'Housemaids are becoming more common in many urban families.',
+            topicVn: 'Người giúp việc gia đình đang trở nên phổ biến hơn ở nhiều gia đình thành thị.',
+            centerEn: 'Housemaids',
+            centerVn: 'Người giúp việc gia đình',
+            idea1: { en: 'More relaxing time', vn: 'Có thêm thời gian thư giãn', tag: 'Cụm danh từ' },
+            idea2: { en: 'A tidier home', vn: 'Ngôi nhà gọn gàng hơn', tag: 'Cụm danh từ' },
+            idea3: { en: 'Better social skills for family members', vn: 'Kỹ năng xã hội tốt hơn cho các thành viên', tag: 'Cụm danh từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Người giúp việc gia đình đang trở nên phổ biến hơn ở nhiều gia đình thành thị.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Có thêm thời gian thư giãn',
+                coreEn: 'have more time to relax',
+                steps: [
+                    {
+                        role: 'Lý do',
+                        vn: 'Ở thành phố, bố mẹ thường đi làm cả ngày rất bận rộn',
+                        en: 'parents in big cities are very busy with work all day'
+                    },
+                    {
+                        role: 'Giải thích',
+                        vn: 'Có người phụ giúp nên không phải vất vả làm việc nhà mỗi tối',
+                        en: 'do not have to spend hours doing housework after work'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Có thêm thời gian nghỉ ngơi và trò chuyện, chơi cùng con cái',
+                        en: 'have more time to rest and play with their kids'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Ngôi nhà gọn gàng hơn',
+                coreEn: 'keep the house cleaner and tidier',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Người giúp việc làm quen tay và dọn dẹp nhà cửa đều đặn mỗi ngày',
+                        en: 'clean and take care of the house every day'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Chẳng hạn như quét lau sàn, giặt đồ và rửa chén bát sạch sẽ',
+                        en: 'sweep the floor, wash clothes, and clean the dishes'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Đi làm về thấy nhà cửa ngăn nắp nên dễ chịu hơn hẳn',
+                        en: 'feel comfortable coming home to a clean house'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Kỹ năng xã hội tốt hơn cho các thành viên',
+                coreEn: 'improve social skills for family members',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Trong nhà có thêm người nên trẻ nhỏ được giao tiếp nhiều hơn',
+                        en: 'children have more chances to talk with another person'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Các bé học cách chào hỏi lễ phép, nhờ giúp đỡ và nói lời cảm ơn',
+                        en: 'learn to greet politely, ask for help, and say thank you'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Trở nên cởi mở, lịch sự và biết tôn trọng mọi người hơn',
+                        en: 'become more friendly, polite, and respectful'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about housemaids.",
@@ -317,29 +479,85 @@ const mockTests = [
         id: "test4",
         title: "Topic 04 🏢",
         topic: "Staying in a dormitory offers students many benefits.",
-        promptEn: `<strong>Topic:</strong> Staying in a dormitory offers students many benefits.<br>` +
-            generateMindmap('Staying in a dormitory', 'Making friends', 'Nearby classes', 'your own ideas', 'Learning more skills'),
-        promptVn: `<strong>Chủ đề:</strong> Ở ký túc xá mang lại nhiều lợi ích cho sinh viên.<br>` +
-            generateMindmap('Ở ký túc xá', 'Kết bạn', 'Gần lớp học', 'ý tưởng của bạn', 'Học thêm kỹ năng'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Making friends', [
-                        'when living in a dormitory, students share rooms and common spaces with others',
-                        'talk, study, and spend time together every day'
-                    ])}
-                    ${generateVocabItem('02', 'Nearby classes', [
-                        'located inside the campus',
-                        'don’t need to travel far',
-                        'save time and energy'
-                    ])}
-                    ${generateVocabItem('03', 'Learning more skills', [
-                        'take care of themselves, such as cleaning their room, managing time, and solving problems',
-                        'become more independent and responsible'
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '04',
+            topicEn: 'Staying in a dormitory offers students many benefits.',
+            topicVn: 'Ở ký túc xá mang lại nhiều lợi ích cho sinh viên.',
+            centerEn: 'Staying in a dormitory',
+            centerVn: 'Ở ký túc xá',
+            idea1: { en: 'Making friends', vn: 'Kết bạn', tag: 'Danh động từ' },
+            idea2: { en: 'Nearby classes', vn: 'Gần lớp học', tag: 'Cụm danh từ' },
+            idea3: { en: 'Learning more skills', vn: 'Học thêm kỹ năng', tag: 'Danh động từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Ở ký túc xá mang lại nhiều lợi ích cho sinh viên.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Kết bạn',
+                coreEn: 'make many new friends',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Sinh viên sống chung phòng với các bạn đến từ nhiều nơi khác nhau',
+                        en: 'share a room with students from different places'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Hằng ngày cùng nhau ăn cơm, trò chuyện và chỉ bài cho nhau',
+                        en: 'eat, talk, and study together every day'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Đỡ thấy cô đơn khi sống xa nhà và có thêm nhiều bạn thân',
+                        en: 'do not feel lonely and have close friends'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Gần lớp học',
+                coreEn: 'live very close to classes',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Ký túc xá thường nằm ngay bên trong khuôn viên trường đại học',
+                        en: 'dormitories are usually right inside the school campus'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Chỉ cần đi bộ vài phút là tới lớp, không lo kẹt xe hay trễ giờ',
+                        en: 'just walk a few minutes to class without traffic jams'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Tiết kiệm được cả thời gian đi lại lẫn tiền xăng xe mỗi tháng',
+                        en: 'save both travel time and money'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Học thêm kỹ năng',
+                coreEn: 'learn useful life skills',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Sống xa bố mẹ nên sinh viên phải tự tay lo mọi sinh hoạt cá nhân',
+                        en: 'live far from parents and take care of themselves'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Tự dọn phòng, giặt đồ, tính toán chi tiêu và nhường nhịn bạn cùng phòng',
+                        en: 'clean the room, manage money, and get along with roommates'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Trở nên tự lập, có trách nhiệm và trưởng thành hơn nhiều',
+                        en: 'become more independent and mature'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about staying in a dormitory.",
@@ -367,32 +585,85 @@ const mockTests = [
         id: "test5",
         title: "Topic 05 🏙️",
         topic: "Living in an apartment has some disadvantages.",
-        promptEn: `<strong>Topic:</strong> Living in an apartment has some disadvantages.<br>` +
-            generateMindmap('Living in an apartment', 'Pet restriction', 'Small space', 'your own ideas', 'Noise from neighbor'),
-        promptVn: `<strong>Chủ đề:</strong> Sống trong căn hộ có một số nhược điểm.<br>` +
-            generateMindmap('Sống trong căn hộ', 'Hạn chế thú cưng', 'Không gian nhỏ', 'ý tưởng của bạn', 'Tiếng ồn từ hàng xóm'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Small space', [
-                        'most apartments are not very large, especially in big cities',
-                        'may not have enough room for all their furniture or personal things',
-                        'feel uncomfortable and crowded'
-                    ])}
-                    ${generateVocabItem('02', 'Pet restriction', [
-                        'do not allow pets, or they only allow small animals',
-                        'problem for people who love animals',
-                        'cannot enjoy having a pet at home'
-                    ])}
-                    ${generateVocabItem('03', 'Noise from neighbor', [
-                        'live very close to each other',
-                        'easy to hear sounds from next door',
-                        'play loud music, talk loudly, or move furniture at night',
-                        'difficult to relax or sleep well'
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '05',
+            topicEn: 'Living in an apartment has some disadvantages.',
+            topicVn: 'Sống trong căn hộ có một số nhược điểm.',
+            centerEn: 'Living in an apartment',
+            centerVn: 'Sống trong căn hộ',
+            idea1: { en: 'Small space', vn: 'Không gian nhỏ', tag: 'Cụm danh từ' },
+            idea2: { en: 'Pet restriction', vn: 'Hạn chế thú cưng', tag: 'Cụm danh từ' },
+            idea3: { en: 'Noise from neighbor', vn: 'Tiếng ồn từ hàng xóm', tag: 'Cụm danh từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Sống trong căn hộ có một số nhược điểm.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Không gian nhỏ',
+                coreEn: 'the living space is quite small',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Đa số các căn hộ chung cư ở thành phố có diện tích khá hạn chế',
+                        en: 'most apartments in big cities are not very large'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Không có sân vườn riêng và thiếu chỗ để bày nhiều đồ đạc',
+                        en: 'have no garden and little space for furniture'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Đôi khi tạo cảm giác hơi bí bách, chật chội nếu gia đình đông người',
+                        en: 'feel crowded and a bit uncomfortable'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Hạn chế thú cưng',
+                coreEn: 'cannot keep pets freely',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Nhiều tòa chung cư cấm nuôi chó mèo để giữ vệ sinh và tránh ồn',
+                        en: 'many apartment buildings do not allow dogs or cats'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Điều này rất bất tiện và đáng tiếc cho những người yêu động vật',
+                        en: 'a big problem for people who love animals'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Họ đành phải từ bỏ sở thích nuôi thú cưng trong nhà',
+                        en: 'cannot enjoy keeping a pet at home'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Tiếng ồn từ hàng xóm',
+                coreEn: 'get bothered by noise from neighbors',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Các căn hộ nằm sát vách và ngay tầng trên - tầng dưới với nhau',
+                        en: 'people live very close to each other in one building'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Dễ nghe tiếng trẻ con chạy nhảy, kéo bàn ghế hay mở nhạc to ban đêm',
+                        en: 'hear loud music, footsteps, or kids running at night'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Khó nghỉ ngơi yên tĩnh hoặc bị mất ngủ sau ngày làm việc mệt',
+                        en: 'feel annoyed and find it hard to sleep well'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about living in an apartment.",
@@ -420,29 +691,85 @@ const mockTests = [
         id: "test6",
         title: "Topic 06 🤝",
         topic: "Teamwork plays an important role in young people’s lives.",
-        promptEn: `<strong>Topic:</strong> Teamwork plays an important role in young people’s lives.<br>` +
-            generateMindmap('Teamwork', 'Leadership', 'Cooperation', 'your own ideas', 'Effective work'),
-        promptVn: `<strong>Chủ đề:</strong> Làm việc nhóm đóng vai trò quan trọng trong cuộc sống của người trẻ.<br>` +
-            generateMindmap('Làm việc nhóm', 'Lãnh đạo', 'Sự hợp tác', 'ý tưởng của bạn', 'Công việc hiệu quả'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Cooperation', [
-                        'everyone needs to share ideas and support each other',
-                        'learn how to listen and work well with others'
-                    ])}
-                    ${generateVocabItem('02', 'Leadership', [
-                        'one person may become the leader and guide the team',
-                        'learns how to organize work and make decisions'
-                    ])}
-                    ${generateVocabItem('03', 'Effective work', [
-                        'complete tasks faster and better',
-                        'focus on what they are good at',
-                        'one student can do research, while another designs slides for a presentation'
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '06',
+            topicEn: 'Teamwork plays an important role in young people’s lives.',
+            topicVn: 'Làm việc nhóm đóng vai trò quan trọng trong cuộc sống của người trẻ.',
+            centerEn: 'Teamwork',
+            centerVn: 'Làm việc nhóm',
+            idea1: { en: 'Cooperation', vn: 'Sự hợp tác', tag: 'Danh từ' },
+            idea2: { en: 'Leadership', vn: 'Lãnh đạo', tag: 'Danh từ' },
+            idea3: { en: 'Effective work', vn: 'Công việc hiệu quả', tag: 'Cụm danh từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Làm việc nhóm đóng vai trò quan trọng trong cuộc sống của người trẻ.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Sự hợp tác',
+                coreEn: 'learn how to work well with others',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Khi làm chung nhóm, không ai có thể chỉ làm theo ý riêng của mình',
+                        en: 'cannot just do things in their own way'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Mọi người phải biết lắng nghe, góp ý và phụ giúp lẫn nhau',
+                        en: 'listen to others, share ideas, and help each other'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Biết cách phối hợp nhịp nhàng và sống hòa đồng hơn',
+                        en: 'cooperate smoothly and get along well with people'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Lãnh đạo',
+                coreEn: 'develop leadership skills',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Trong nhóm luôn cần một người đứng ra tổ chức và dẫn dắt chung',
+                        en: 'a group always needs a leader to guide everyone'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Tập cách chia việc cho các bạn và đứng ra giải quyết bất đồng',
+                        en: 'learn to divide tasks and solve group problems'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Tự tin hơn và có kinh nghiệm quản lý rất tốt cho tương lai',
+                        en: 'become more confident and gain skills for future jobs'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Công việc hiệu quả',
+                coreEn: 'make work faster and more effective',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Nhiều người cùng chung tay thì việc nặng cũng thành nhẹ nhàng',
+                        en: 'many people share the work together'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Làm bài thuyết trình: bạn tìm tài liệu, bạn làm slide, bạn đứng nói',
+                        en: 'one finds info, another makes slides, and one speaks'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Hoàn thành nhiệm vụ nhanh hơn và đạt kết quả tốt hơn hẳn',
+                        en: 'finish tasks much faster and get better results'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about teamwork.",
@@ -470,30 +797,85 @@ const mockTests = [
         id: "test7",
         title: "Topic 07 💼",
         topic: "There are several factors to consider when applying for a job.",
-        promptEn: `<strong>Topic:</strong> There are several factors to consider when applying for a job.<br>` +
-            generateMindmap('Applying for a job', 'Salary', 'Location', 'your own ideas', 'Working environment'),
-        promptVn: `<strong>Chủ đề:</strong> Có một số yếu tố cần xem xét khi nộp đơn xin việc.<br>` +
-            generateMindmap('Nộp đơn xin việc', 'Tiền lương', 'Vị trí', 'ý tưởng của bạn', 'Môi trường làm việc'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Salary', [
-                        'need money to pay for their daily expenses such as food, rent, and transportation',
-                        'live more comfortably'
-                    ])}
-                    ${generateVocabItem('02', 'Location', [
-                        'workplace is too far from home',
-                        'spend a lot of time traveling',
-                        'travel two hours every day to go to work',
-                        'very tiring'
-                    ])}
-                    ${generateVocabItem('03', 'Working environment', [
-                        'make people feel comfortable and motivated',
-                        'friendly colleagues, supportive managers, and a safe workplace'
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '07',
+            topicEn: 'There are several factors to consider when applying for a job.',
+            topicVn: 'Có một số yếu tố cần xem xét khi nộp đơn xin việc.',
+            centerEn: 'Applying for a job',
+            centerVn: 'Nộp đơn xin việc',
+            idea1: { en: 'Salary', vn: 'Tiền lương', tag: 'Danh từ' },
+            idea2: { en: 'Location', vn: 'Vị trí', tag: 'Danh từ' },
+            idea3: { en: 'Working environment', vn: 'Môi trường làm việc', tag: 'Cụm danh từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Có một số yếu tố cần xem xét khi nộp đơn xin việc.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Tiền lương',
+                coreEn: 'salary is the first thing to consider',
+                steps: [
+                    {
+                        role: 'Lý do',
+                        vn: 'Ai đi làm cũng cần thu nhập để trang trải cuộc sống hằng ngày',
+                        en: 'everyone needs money to pay for daily life'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Lo tiền ăn uống, thuê nhà, xăng xe và phụ giúp gia đình',
+                        en: 'pay for food, house rent, travel, and support family'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Lương tốt giúp cuộc sống ổn định và có động lực làm việc hơn',
+                        en: 'live comfortably and feel motivated to work hard'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Vị trí',
+                coreEn: 'the location of the workplace is important',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Nếu chỗ làm quá xa nhà thì việc đi lại mỗi ngày rất vất vả',
+                        en: 'if the office is too far, traveling every day is hard'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Mất hàng tiếng ngoài đường chịu cảnh kẹt xe, nắng mưa bụi bặm',
+                        en: 'spend hours in traffic jams or bad weather'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Chọn công ty gần nhà giúp đỡ mệt mỏi và tiết kiệm thời gian',
+                        en: 'feel less tired and save a lot of time'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Môi trường làm việc',
+                coreEn: 'care about a good working environment',
+                steps: [
+                    {
+                        role: 'Lý do',
+                        vn: 'Chúng ta dành khoảng 8 tiếng mỗi ngày ở nơi làm việc',
+                        en: 'spend about eight hours every day at work'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Có sếp tâm lý và đồng nghiệp hòa đồng sẽ dễ hỏi han, hỗ trợ nhau',
+                        en: 'have supportive bosses and friendly coworkers'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Đi làm thấy vui vẻ, bớt áp lực và muốn gắn bó lâu dài',
+                        en: 'feel happy, less stressed, and stay longer'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about applying for a job.",
@@ -521,30 +903,85 @@ const mockTests = [
         id: "test8",
         title: "Topic 08 📱",
         topic: "E-books are becoming increasingly popular in today’s modern society.",
-        promptEn: `<strong>Topic:</strong> E-books are becoming increasingly popular in today’s modern society.<br>` +
-            generateMindmap('E-books', 'easy access', 'convenient', 'your own ideas', 'knowledge'),
-        promptVn: `<strong>Chủ đề:</strong> Sách điện tử đang ngày càng trở nên phổ biến trong xã hội hiện đại ngày nay.<br>` +
-            generateMindmap('Sách điện tử', 'dễ dàng truy cập', 'tiện lợi', 'ý tưởng của bạn', 'kiến thức'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Convenient', [
-                        'read them anytime and anywhere using their phones, tablets, or laptops',
-                        'do not need to carry heavy books',
-                        'make reading much easier and more flexible'
-                    ])}
-                    ${generateVocabItem('02', 'Easy access', [
-                        'download books from the Internet in just a few minutes',
-                        'search for specific information quickly'
-                    ])}
-                    ${generateVocabItem('03', 'Knowledge', [
-                        'many different types of e-books, such as textbooks, novels, and self-help books',
-                        'learn many new things',
-                        'read an e-book about learning English or improving skills'
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '08',
+            topicEn: 'E-books are becoming increasingly popular in today’s modern society.',
+            topicVn: 'Sách điện tử đang ngày càng trở nên phổ biến trong xã hội hiện đại ngày nay.',
+            centerEn: 'E-books',
+            centerVn: 'Sách điện tử',
+            idea1: { en: 'Convenient', vn: 'Tiện lợi', tag: 'Tính từ' },
+            idea2: { en: 'Easy access', vn: 'Dễ dàng truy cập', tag: 'Cụm danh từ' },
+            idea3: { en: 'Knowledge', vn: 'Kiến thức', tag: 'Danh từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Sách điện tử đang ngày càng trở nên phổ biến trong xã hội hiện đại ngày nay.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Tiện lợi',
+                coreEn: 'e-books are very convenient',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Chỉ cần một chiếc điện thoại hay máy tính bảng là lưu được cả trăm cuốn sách',
+                        en: 'keep hundreds of books in just one phone or tablet'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Không cần phải mang vác nhiều cuốn sách giấy dày và nặng theo người',
+                        en: 'do not need to carry heavy paper books'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Đọc sách thoải mái mọi lúc mọi nơi, như trên xe buýt hay quán cà phê',
+                        en: 'read anytime and anywhere easily'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Dễ dàng truy cập',
+                coreEn: 'provide easy and fast access',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Không cần mất công chạy ra tận nhà sách hay thư viện để tìm mua',
+                        en: 'do not need to travel to bookstores or libraries'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Chỉ cần có mạng là tìm tên sách và tải về máy trong vài phút',
+                        en: 'search on the Internet and download books in minutes'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Tiết kiệm thời gian và có rất nhiều đầu sách rẻ hoặc miễn phí',
+                        en: 'save time and many e-books are cheap or free'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Kiến thức',
+                coreEn: 'help people gain more knowledge',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Trên mạng có kho sách điện tử khổng lồ với đủ mọi lĩnh vực',
+                        en: 'there are many types of e-books on different topics'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Từ sách học tiếng Anh, nấu ăn, kỹ năng mềm cho đến tiểu thuyết',
+                        en: 'books about learning English, cooking, life skills, or novels'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Người đọc dễ dàng tìm tòi và học thêm nhiều điều bổ ích mỗi ngày',
+                        en: 'learn many new and useful things every day'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about e-books.",
@@ -572,32 +1009,85 @@ const mockTests = [
         id: "test9",
         title: "Topic 09 ⭐",
         topic: "Responsibility plays an important role in personal and social development.",
-        promptEn: `<strong>Topic:</strong> Responsibility plays an important role in personal and social development.<br>` +
-            generateMindmap('Responsibility', 'achieve high results', 'gain trust from others', 'your own ideas', 'improve teamwork skills'),
-        promptVn: `<strong>Chủ đề:</strong> Trách nhiệm đóng một vai trò quan trọng trong sự phát triển cá nhân và xã hội.<br>` +
-            generateMindmap('Trách nhiệm', 'đạt kết quả cao', 'nhận được sự tin tưởng từ người khác', 'ý tưởng của bạn', 'cải thiện kỹ năng làm việc nhóm'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Achieve high results', [
-                        'try to complete their tasks carefully and on time',
-                        'take their work seriously and do their best',
-                        'get good grades and better results'
-                    ])}
-                    ${generateVocabItem('02', 'Gain trust from others', [
-                        'keeps their promises and does their duties well',
-                        'others will believe in them',
-                        'have more opportunities in study and work'
-                    ])}
-                    ${generateVocabItem('03', 'Improve teamwork skills', [
-                        'each member in a team is responsible',
-                        'work becomes easier and more effective',
-                        'does their part and supports each other',
-                        'helps teams work better together'
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '09',
+            topicEn: 'Responsibility plays an important role in personal and social development.',
+            topicVn: 'Trách nhiệm đóng một vai trò quan trọng trong sự phát triển cá nhân và xã hội.',
+            centerEn: 'Responsibility',
+            centerVn: 'Trách nhiệm',
+            idea1: { en: 'Achieve high results', vn: 'Đạt kết quả cao', tag: 'Động từ' },
+            idea2: { en: 'Gain trust from others', vn: 'Nhận được sự tin tưởng từ người khác', tag: 'Động từ' },
+            idea3: { en: 'Improve teamwork skills', vn: 'Cải thiện kỹ năng làm việc nhóm', tag: 'Động từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Trách nhiệm đóng một vai trò quan trọng trong sự phát triển cá nhân và xã hội.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Đạt kết quả cao',
+                coreEn: 'help people achieve high results',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Người có trách nhiệm luôn làm việc nghiêm túc, không làm cho có',
+                        en: 'always take their study and work seriously'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Cố gắng hoàn thành bài tập hay công việc thật kỹ và đúng hạn',
+                        en: 'try their best to finish tasks carefully and on time'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Đạt điểm cao ở trường hoặc có thành tích tốt trong công việc',
+                        en: 'get good grades at school and better results at work'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Nhận được sự tin tưởng từ người khác',
+                coreEn: 'gain trust from people around them',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Họ luôn biết giữ lời hứa và làm tròn phần việc đã nhận',
+                        en: 'always keep promises and do their duties well'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Bạn bè, thầy cô hay cấp trên đều yên tâm khi giao việc quan trọng',
+                        en: 'friends, teachers, and bosses feel safe giving them tasks'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Được quý mến và có nhiều cơ hội phát triển tốt hơn',
+                        en: 'get more good opportunities in study and work'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Cải thiện kỹ năng làm việc nhóm',
+                coreEn: 'improve teamwork skills',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Trong nhóm, ai cũng tự giác hoàn thành tốt phần việc của mình',
+                        en: 'every member does their own part well'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Không ai phải gánh việc thay người khác hay cãi nhau vì trễ hạn',
+                        en: 'no one has to do others\' work or argue about late tasks'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Cả nhóm phối hợp vui vẻ, ăn ý và đạt mục tiêu chung nhanh hơn',
+                        en: 'the whole team works happily and effectively together'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about responsibility.",
@@ -625,28 +1115,85 @@ const mockTests = [
         id: "test10",
         title: "Topic 10 🏋️",
         topic: "Although doing exercise is generally beneficial, there are still several disadvantages.",
-        promptEn: `<strong>Topic:</strong> Although doing exercise is generally beneficial, there are still several disadvantages.<br>` +
-            generateMindmap('Doing exercise', 'time-consuming', 'expensive', 'your own ideas', 'the risk of injuries'),
-        promptVn: `<strong>Chủ đề:</strong> Mặc dù tập thể dục nói chung là có lợi, vẫn có một số nhược điểm.<br>` +
-            generateMindmap('Tập thể dục', 'tốn thời gian', 'đắt đỏ', 'ý tưởng của bạn', 'nguy cơ chấn thương'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Time-consuming', [
-                        'spend a certain amount of time every day practicing regularly',
-                        'difficult to balance exercise with their daily schedule'
-                    ])}
-                    ${generateVocabItem('02', 'Expensive', [
-                        'money for equipment, gym memberships, or training classes',
-                        'pay monthly fees to go to the gym or buy sports clothes and shoes'
-                    ])}
-                    ${generateVocabItem('03', 'The risk of injuries', [
-                        'do not exercise properly or push themselves too hard, they can get hurt',
-                        'hurt their muscles or joints while lifting heavy weights or playing sports'
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '10',
+            topicEn: 'Although doing exercise is generally beneficial, there are still several disadvantages.',
+            topicVn: 'Mặc dù tập thể dục nói chung là có lợi, vẫn có một số nhược điểm.',
+            centerEn: 'Doing exercise',
+            centerVn: 'Tập thể dục',
+            idea1: { en: 'Time-consuming', vn: 'Tốn thời gian', tag: 'Tính từ' },
+            idea2: { en: 'Expensive', vn: 'Đắt đỏ', tag: 'Tính từ' },
+            idea3: { en: 'The risk of injuries', vn: 'Nguy cơ chấn thương', tag: 'Cụm danh từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Mặc dù tập thể dục nói chung là có lợi, vẫn có một số nhược điểm.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Tốn thời gian',
+                coreEn: 'doing exercise can be time-consuming',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Muốn khỏe đẹp thì phải duy trì tập luyện đều đặn mỗi ngày',
+                        en: 'need to spend time practicing regularly every day'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Tốn thêm cả thời gian thay đồ, đi tới phòng tập và tắm rửa nghỉ ngơi',
+                        en: 'take time to go to the gym, work out, and shower'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Người bận học hành, đi làm rất khó sắp xếp được thời gian trống',
+                        en: 'busy people find it hard to balance their schedule'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Đắt đỏ',
+                coreEn: 'it can cost quite a lot of money',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Nhiều bộ môn thể thao hoặc phòng tập đòi hỏi chi phí không hề rẻ',
+                        en: 'many gyms and sports activities require money'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Phải đóng thẻ tập gym hằng tháng, mua giày êm và quần áo thể thao',
+                        en: 'pay monthly gym fees and buy sports shoes and clothes'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Khá tốn kém đối với học sinh, sinh viên hay người thu nhập thấp',
+                        en: 'quite expensive for students or low-income people'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Nguy cơ chấn thương',
+                coreEn: 'there is a risk of getting hurt',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Nếu tập sai động tác, quên khởi động kỹ hoặc cố tập quá sức',
+                        en: 'do not warm up well or push themselves too hard'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Rất dễ bị căng cơ, đau khớp khi nâng tạ nặng hay chơi bóng đá',
+                        en: 'hurt their muscles or joints when lifting weights or playing sports'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Bị đau nhức và ảnh hưởng tới việc đi lại, sinh hoạt hằng ngày',
+                        en: 'feel painful and affect daily life and work'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about doing exercise.",
@@ -674,29 +1221,85 @@ const mockTests = [
         id: "test11",
         title: "Topic 11 👩",
         topic: "Women should be encouraged to become leaders.",
-        promptEn: `<strong>Topic:</strong> Women should be encouraged to become leaders.<br>` +
-            generateMindmap('Women', 'good communication', 'careful decision making', 'your own ideas', 'multitasking skills'),
-        promptVn: `<strong>Chủ đề:</strong> Phụ nữ nên được khuyến khích trở thành những nhà lãnh đạo.<br>` +
-            generateMindmap('Phụ nữ', 'giao tiếp tốt', 'ra quyết định cẩn thận', 'ý tưởng của bạn', 'kỹ năng đa nhiệm'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Good communication', [
-                        'good at listening and expressing their ideas clearly',
-                        'understand others’ feelings and build strong relationships'
-                    ])}
-                    ${generateVocabItem('02', 'Careful decision making', [
-                        'think carefully before making a decision and consider different points of view',
-                        'avoid mistakes'
-                    ])}
-                    ${generateVocabItem('03', 'Multitasking skills', [
-                        'manage many tasks at the same time and still do them well',
-                        'handle work responsibilities while also taking care of her family',
-                        'manage different duties effectively'
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '11',
+            topicEn: 'Women should be encouraged to become leaders.',
+            topicVn: 'Phụ nữ nên được khuyến khích trở thành những nhà lãnh đạo.',
+            centerEn: 'Women',
+            centerVn: 'Phụ nữ',
+            idea1: { en: 'Good communication', vn: 'Giao tiếp tốt', tag: 'Cụm danh từ' },
+            idea2: { en: 'Careful decision making', vn: 'Ra quyết định cẩn thận', tag: 'Cụm danh từ' },
+            idea3: { en: 'Multitasking skills', vn: 'Kỹ năng đa nhiệm', tag: 'Cụm danh từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Phụ nữ nên được khuyến khích trở thành những nhà lãnh đạo.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Giao tiếp tốt',
+                coreEn: 'women often have good communication skills',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Phụ nữ thường khéo léo, biết kiên nhẫn lắng nghe và nói chuyện nhẹ nhàng',
+                        en: 'good at listening patiently and speaking gently'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Dễ thấu hiểu tâm tư, cảm xúc của các thành viên trong nhóm',
+                        en: 'easily understand other people\'s feelings'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Gắn kết mọi người lại gần nhau và giữ hòa khí nơi làm việc',
+                        en: 'connect people and build strong relationships'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Ra quyết định cẩn thận',
+                coreEn: 'make very careful decisions',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Họ ít khi nóng vội mà luôn suy nghĩ thấu đáo trước khi quyết định',
+                        en: 'think carefully instead of deciding in a hurry'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Biết lắng nghe nhiều ý kiến khác nhau và tính trước các rủi ro',
+                        en: 'listen to different ideas and consider possible risks'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Giúp tập thể và công ty tránh được những sai lầm đáng tiếc',
+                        en: 'help the team avoid costly mistakes'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Kỹ năng đa nhiệm',
+                coreEn: 'good at doing many tasks at the same time',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Phụ nữ có khả năng sắp xếp và quán xuyến nhiều đầu việc cùng lúc',
+                        en: 'organize and handle many tasks at once'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Vừa giải quyết tốt việc công ty, vừa chăm lo chu đáo cho gia đình',
+                        en: 'do office work well while taking care of their family'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Điều hành công việc bận rộn một cách ngăn nắp và hiệu quả',
+                        en: 'manage different duties smoothly and effectively'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about the reasons why women should become leaders.",
@@ -724,31 +1327,85 @@ const mockTests = [
         id: "test12",
         title: "Topic 12 💔",
         topic: "There are several reasons for divorce.",
-        promptEn: `<strong>Topic:</strong> There are several reasons for divorce.<br>` +
-            generateMindmap('Divorce', 'lack of responsibility', 'financial burden', 'your own ideas', 'communication problems'),
-        promptVn: `<strong>Chủ đề:</strong> Có một vài lý do dẫn đến ly hôn.<br>` +
-            generateMindmap('Ly hôn', 'thiếu trách nhiệm', 'gánh nặng tài chính', 'ý tưởng của bạn', 'vấn đề giao tiếp'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Lack of responsibility', [
-                        'one or both partners do not take care of their duties',
-                        'problems can happen',
-                        'not support each other or take care of the family'
-                    ])}
-                    ${generateVocabItem('02', 'Financial burden', [
-                        'Money problems can create a lot of pressure in a marriage',
-                        'does not have enough money or spends too much, they may argue frequently',
-                        'financial stress can damage the relationship'
-                    ])}
-                    ${generateVocabItem('03', 'Communication problems', [
-                        'do not talk openly or do not understand each other',
-                        'conflicts can happen',
-                        'relationship becomes weaker over time and may end in divorce'
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '12',
+            topicEn: 'There are several reasons for divorce.',
+            topicVn: 'Có một vài lý do dẫn đến ly hôn.',
+            centerEn: 'Divorce',
+            centerVn: 'Ly hôn',
+            idea1: { en: 'Lack of responsibility', vn: 'Thiếu trách nhiệm', tag: 'Cụm danh từ' },
+            idea2: { en: 'Financial burden', vn: 'Gánh nặng tài chính', tag: 'Cụm danh từ' },
+            idea3: { en: 'Communication problems', vn: 'Vấn đề giao tiếp', tag: 'Cụm danh từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Có một vài lý do dẫn đến ly hôn.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Thiếu trách nhiệm',
+                coreEn: 'lack of responsibility in family life',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Một trong hai người thờ ơ, không chịu chăm lo cho tổ ấm chung',
+                        en: 'one partner does not care about the family'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Bỏ bê việc nhà và đẩy hết chuyện chăm con cho vợ hoặc chồng',
+                        en: 'ignore housework and leave childcare to the other'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Người còn lại quá mệt mỏi, chán nản nên hôn nhân dễ đổ vỡ',
+                        en: 'feel too tired and disappointed, leading to divorce'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Gánh nặng tài chính',
+                coreEn: 'money problems create big stress',
+                steps: [
+                    {
+                        role: 'Lý do',
+                        vn: 'Cuộc sống gia đình có rất nhiều khoản chi tiêu phải lo mỗi tháng',
+                        en: 'married life has many bills to pay every month'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Khi thiếu tiền lo ăn học cho con hoặc nợ nần, vợ chồng rất dễ cãi vã',
+                        en: 'when lacking money for kids or bills, couples argue a lot'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Áp lực tiền bạc kéo dài làm rạn nứt hạnh phúc gia đình',
+                        en: 'money stress damages their relationship'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Vấn đề giao tiếp',
+                coreEn: 'fail to communicate well with each other',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Vợ chồng ít tâm sự, không chịu lắng nghe hoặc hay nói lời nặng nề',
+                        en: 'rarely talk openly or do not listen to each other'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Những hiểu lầm nhỏ tích tụ lâu ngày biến thành mâu thuẫn lớn',
+                        en: 'small misunderstandings turn into big conflicts'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Tình cảm phai nhạt dần và cuối cùng chọn đường ai nấy đi',
+                        en: 'become distant over time and end in divorce'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about divorce.",
@@ -776,28 +1433,85 @@ const mockTests = [
         id: "test13",
         title: "Topic 13 👔",
         topic: "There are several factors to consider in order to make a good impression in an interview.",
-        promptEn: `<strong>Topic:</strong> There are several factors to consider in order to make a good impression in an interview.<br>` +
-            generateMindmap('Job interviews', 'preparation', 'communication skills', 'your own ideas', 'appearance'),
-        promptVn: `<strong>Chủ đề:</strong> Có một số yếu tố cần xem xét để tạo ấn tượng tốt trong một cuộc phỏng vấn.<br>` +
-            generateMindmap('Phỏng vấn xin việc', 'sự chuẩn bị', 'kỹ năng giao tiếp', 'ý tưởng của bạn', 'ngoại hình'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Preparation', [
-                        'understand the job and the company before the interview',
-                        'prepare answers for common questions'
-                    ])}
-                    ${generateVocabItem('02', 'Communication skills', [
-                        'express their ideas clearly and confidently',
-                        'speak politely and listen carefully to the interviewer'
-                    ])}
-                    ${generateVocabItem('03', 'Appearance', [
-                        'wearing clean and formal clothes shows respect and a professional attitude',
-                        'increase the chances of success in an interview'
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '13',
+            topicEn: 'There are several factors to consider in order to make a good impression in an interview.',
+            topicVn: 'Có một số yếu tố cần xem xét để tạo ấn tượng tốt trong một cuộc phỏng vấn.',
+            centerEn: 'Job interviews',
+            centerVn: 'Phỏng vấn xin việc',
+            idea1: { en: 'Preparation', vn: 'Sự chuẩn bị', tag: 'Danh từ' },
+            idea2: { en: 'Communication skills', vn: 'Kỹ năng giao tiếp', tag: 'Cụm danh từ' },
+            idea3: { en: 'Appearance', vn: 'Ngoại hình', tag: 'Danh từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Có một số yếu tố cần xem xét để tạo ấn tượng tốt trong một cuộc phỏng vấn.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Sự chuẩn bị',
+                coreEn: 'prepare carefully before the interview',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Tìm hiểu trước thông tin về công ty và vị trí công việc mình nộp đơn',
+                        en: 'learn about the company and the job beforehand'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Tập trả lời ở nhà các câu hỏi quen thuộc như giới thiệu bản thân',
+                        en: 'practice answering common questions at home'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Bước vào phòng phỏng vấn tự tin hơn, không bị run hay ấp úng',
+                        en: 'feel much more confident and speak smoothly'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Kỹ năng giao tiếp',
+                coreEn: 'show good communication skills',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Trình bày ý rõ ràng, lễ phép và giữ ánh mắt tự nhiên với người hỏi',
+                        en: 'speak clearly, politely, and make eye contact'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Chăm chú lắng nghe câu hỏi để trả lời đúng trọng tâm',
+                        en: 'listen carefully to answer right to the point'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Tạo thiện cảm lớn với nhà tuyển dụng ngay từ buổi gặp đầu tiên',
+                        en: 'make a great impression on the interviewer'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Ngoại hình',
+                coreEn: 'have a neat and polite appearance',
+                steps: [
+                    {
+                        role: 'Lý do',
+                        vn: 'Vẻ bề ngoài là điều đầu tiên nhà tuyển dụng nhìn thấy khi bạn bước vào',
+                        en: 'the first thing interviewers see when you walk in'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Mặc quần áo sạch sẽ, lịch sự, đầu tóc gọn gàng và tươi cười',
+                        en: 'wear clean, formal clothes and smile nicely'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Thể hiện sự tôn trọng công ty và tăng cơ hội được nhận việc',
+                        en: 'show respect and increase the chance of getting hired'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about job interviews.",
@@ -825,28 +1539,85 @@ const mockTests = [
         id: "test14",
         title: "Topic 14 🌳",
         topic: "Trees bring many benefits to people and the environment.",
-        promptEn: `<strong>Topic:</strong> Trees bring many benefits to people and the environment.<br>` +
-            generateMindmap('Benefits of trees', 'Food', 'Flood prevention', 'your own ideas', 'Environmental protection'),
-        promptVn: `<strong>Chủ đề:</strong> Cây cối mang lại nhiều lợi ích cho con người và môi trường.<br>` +
-            generateMindmap('Lợi ích của cây cối', 'Thức ăn', 'Ngăn ngừa lũ lụt', 'ý tưởng của bạn', 'Bảo vệ môi trường'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Food', [
-                        { en: 'give us fruits, nuts, and leaves', vn: 'cho chúng ta trái cây, hạt, và lá' },
-                        { en: 'Ex: mango trees + coconut trees + banana trees => very useful', vn: 'VD: cây xoài + cây dừa + cây chuối => rất hữu ích' }
-                    ])}
-                    ${generateVocabItem('02', 'Environmental protection', [
-                        { en: 'absorb carbon dioxide + release oxygen => make the air cleaner; reduce air pollution', vn: 'hấp thụ khí carbon dioxide + thải ra oxy => làm cho không khí sạch hơn; giảm ô nhiễm không khí' },
-                        { en: 'provide shade + make the weather cooler', vn: 'cung cấp bóng râm + làm cho thời tiết mát mẻ hơn' }
-                    ])}
-                    ${generateVocabItem('03', 'Flood prevention', [
-                        { en: 'roots => hold the soil + absorb rainwater', vn: 'rễ cây => giữ đất + hấp thụ nước mưa' },
-                        { en: 'many trees => water does not flow too quickly => prevent flood', vn: 'nhiều cây => nước không chảy quá nhanh => ngăn ngừa lũ lụt' }
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '14',
+            topicEn: 'Trees bring many benefits to people and the environment.',
+            topicVn: 'Cây cối mang lại nhiều lợi ích cho con người và môi trường.',
+            centerEn: 'Benefits of trees',
+            centerVn: 'Lợi ích của cây cối',
+            idea1: { en: 'Food', vn: 'Thức ăn', tag: 'Danh từ' },
+            idea2: { en: 'Environmental protection', vn: 'Bảo vệ môi trường', tag: 'Cụm danh từ' },
+            idea3: { en: 'Flood prevention', vn: 'Ngăn ngừa lũ lụt', tag: 'Cụm danh từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Cây cối mang lại nhiều lợi ích cho con người và môi trường.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Thức ăn',
+                coreEn: 'provide fresh food for people and animals',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Nhiều loài cây cho chúng ta nguồn thực phẩm tự nhiên giàu vitamin',
+                        en: 'many trees give us healthy fruits, nuts, and leaves'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Các cây quen thuộc như xoài, chuối, cam, dừa cho trái ngon quanh năm',
+                        en: 'mango, banana, and coconut trees give delicious fruits'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Cung cấp bữa ăn hằng ngày và giúp người trồng cây có thêm thu nhập',
+                        en: 'provide daily food and help farmers earn money'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Bảo vệ môi trường',
+                coreEn: 'help protect our environment',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Cây xanh hút khí độc hại và nhả ra khí oxy trong lành để thở',
+                        en: 'absorb bad gas and give out fresh oxygen'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Tán cây rộng còn che nắng, tỏa bóng mát cho đường phố',
+                        en: 'provide cool shade on hot sunny days'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Làm bầu không khí sạch hơn và thời tiết dịu mát hơn nhiều',
+                        en: 'make the air cleaner and the weather cooler'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Ngăn ngừa lũ lụt',
+                coreEn: 'help prevent floods in rainy seasons',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Bộ rễ cây đâm sâu giúp giữ chặt đất và hút bớt nước mưa',
+                        en: 'tree roots hold the soil and absorb rainwater'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Khi mưa bão lớn, rừng cây cản bớt sức nước không chảy tràn quá nhanh',
+                        en: 'stop heavy rainwater from flowing too fast'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Giảm thiệt hại do lũ lụt, sạt lở và bảo vệ nhà cửa người dân',
+                        en: 'reduce floods and protect people\'s homes'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about the benefits of trees.",
@@ -874,27 +1645,85 @@ const mockTests = [
         id: "test15",
         title: "Topic 15 ⚡",
         topic: "Electric cars bring many benefits to people and the environment.",
-        promptEn: `<strong>Topic:</strong> Electric cars bring many benefits to people and the environment.<br>` +
-            generateMindmap('Electric cars', 'Reduce pollution', 'Save money', 'your own ideas', 'Save natural resources'),
-        promptVn: `<strong>Chủ đề:</strong> Xe điện mang lại nhiều lợi ích cho con người và môi trường.<br>` +
-            generateMindmap('Xe điện', 'Giảm ô nhiễm', 'Tiết kiệm tiền', 'ý tưởng của bạn', 'Tiết kiệm tài nguyên thiên nhiên'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Reduce pollution', [
-                        { en: '(not) produce smoke + harmful emissions => the air => cleaner (especially in big cities)', vn: '(không) tạo ra khói + khí thải độc hại => không khí => sạch hơn (đặc biệt là ở các thành phố lớn)' }
-                    ])}
-                    ${generateVocabItem('02', 'Save natural resources', [
-                        { en: 'cars and motorbikes => use gas as fuel (limited + may run out)', vn: 'ô tô và xe máy => sử dụng xăng làm nhiên liệu (có hạn + có thể cạn kiệt)' },
-                        { en: 'electric cars => use electricity => reduce the need for fossil fuels => more sustainable in the long term', vn: 'xe điện => sử dụng điện => giảm nhu cầu về nhiên liệu hóa thạch => bền vững hơn về lâu dài' }
-                    ])}
-                    ${generateVocabItem('03', 'Save money', [
-                        { en: '(not) pay for fuel, which is becoming increasingly expensive nowadays', vn: '(không) trả tiền cho nhiên liệu, thứ đang ngày càng trở nên đắt đỏ hiện nay' },
-                        { en: 'expensive at first => cheaper to use in the long term', vn: 'đắt đỏ lúc đầu => rẻ hơn khi sử dụng về lâu dài' }
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '15',
+            topicEn: 'Electric cars bring many benefits to people and the environment.',
+            topicVn: 'Xe điện mang lại nhiều lợi ích cho con người và môi trường.',
+            centerEn: 'Electric cars',
+            centerVn: 'Xe điện',
+            idea1: { en: 'Reduce pollution', vn: 'Giảm ô nhiễm', tag: 'Động từ' },
+            idea2: { en: 'Save natural resources', vn: 'Tiết kiệm tài nguyên thiên nhiên', tag: 'Động từ' },
+            idea3: { en: 'Save money', vn: 'Tiết kiệm tiền', tag: 'Động từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Xe điện mang lại nhiều lợi ích cho con người và môi trường.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Giảm ô nhiễm',
+                coreEn: 'help reduce air and noise pollution',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Xe điện chạy bằng pin nên không xả khói đen như xe xăng dầu',
+                        en: 'run on batteries and produce no dirty smoke'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Động cơ xe điện chạy rất êm ái, hầu như không gây ồn ào ngoài phố',
+                        en: 'run very quietly on the streets'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Giữ bầu không khí ở các thành phố lớn trong lành, dễ thở hơn',
+                        en: 'make the air in big cities much cleaner'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Tiết kiệm tài nguyên thiên nhiên',
+                coreEn: 'save limited natural resources',
+                steps: [
+                    {
+                        role: 'Lý do',
+                        vn: 'Nguồn xăng dầu trong lòng đất có hạn và ngày càng cạn dần',
+                        en: 'oil and gas are limited and may run out in the future'
+                    },
+                    {
+                        role: 'Giải thích',
+                        vn: 'Xe điện dùng nguồn điện sạch thay vì phụ thuộc vào xăng dầu',
+                        en: 'use electricity instead of burning gas and oil'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Bảo tồn được nguồn nhiên liệu tự nhiên cho con cháu mai sau',
+                        en: 'save precious natural fuels for the future'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Tiết kiệm tiền',
+                coreEn: 'help drivers save money in the long run',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Giá xăng ngày càng đắt đỏ, trong khi tiền sạc điện rẻ hơn rất nhiều',
+                        en: 'charging electricity is much cheaper than buying gas'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Xe điện cũng ít tốn tiền thay nhớt hay sửa chữa lặt vặt',
+                        en: 'cost less money for oil changes and repairs'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Dù mua xe ban đầu hơi cao nhưng đi lâu dài lại rất kinh tế',
+                        en: 'cheaper to use and save a lot of money over time'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about the benefits of electric cars.",
@@ -922,29 +1751,85 @@ const mockTests = [
         id: "test16",
         title: "Topic 16 🌍",
         topic: "There are many ways to protect the environment.",
-        promptEn: `<strong>Topic:</strong> There are many ways to protect the environment.<br>` +
-            generateMindmap('Protect the environment', 'Not using plastic bags', 'Using public transport', 'your own ideas', 'Using alternative energy sources'),
-        promptVn: `<strong>Chủ đề:</strong> Có rất nhiều cách để bảo vệ môi trường.<br>` +
-            generateMindmap('Bảo vệ môi trường', 'Không sử dụng túi nilon', 'Sử dụng phương tiện công cộng', 'ý tưởng của bạn', 'Sử dụng các nguồn năng lượng thay thế'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Not using plastic bags', [
-                        { en: 'plastic bags => hard to decompose => stay in the environment for many years => pollute rivers, oceans, and soil', vn: 'túi nilon => khó phân hủy => tồn tại trong môi trường nhiều năm => làm ô nhiễm sông, đại dương, và đất' },
-                        { en: 'should use cloth bags or paper bags instead of plastic ones', vn: 'nên sử dụng túi vải hoặc túi giấy thay vì túi nilon' }
-                    ])}
-                    ${generateVocabItem('02', 'Using alternative energy sources', [
-                        { en: 'alternative energy sources (solar energy, wind energy, nuclear energy) vs fossil fuel (coal, oil, gas)', vn: 'các nguồn năng lượng thay thế (năng lượng mặt trời, năng lượng gió, năng lượng hạt nhân) so với nhiên liệu hóa thạch (than đá, dầu mỏ, khí đốt)' },
-                        { en: 'cleaner + better for the environment', vn: 'sạch hơn + tốt hơn cho môi trường' },
-                        { en: 'reduce air pollution + protect natural resources', vn: 'giảm ô nhiễm không khí + bảo vệ tài nguyên thiên nhiên' }
-                    ])}
-                    ${generateVocabItem('03', 'Using public transport', [
-                        { en: 'use public transport (travel by bus or train)', vn: 'sử dụng phương tiện công cộng (đi lại bằng xe buýt hoặc tàu hỏa)' },
-                        { en: 'fewer private vehicles on the road => reduce air pollution + traffic jams', vn: 'ít phương tiện cá nhân trên đường hơn => giảm ô nhiễm không khí + ùn tắc giao thông' }
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '16',
+            topicEn: 'There are many ways to protect the environment.',
+            topicVn: 'Có rất nhiều cách để bảo vệ môi trường.',
+            centerEn: 'Protect the environment',
+            centerVn: 'Bảo vệ môi trường',
+            idea1: { en: 'Not using plastic bags', vn: 'Không sử dụng túi nilon', tag: 'Danh động từ' },
+            idea2: { en: 'Using alternative energy sources', vn: 'Sử dụng các nguồn năng lượng thay thế', tag: 'Danh động từ' },
+            idea3: { en: 'Using public transport', vn: 'Sử dụng phương tiện công cộng', tag: 'Danh động từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Có rất nhiều cách để bảo vệ môi trường.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Không sử dụng túi nilon',
+                coreEn: 'stop using single-use plastic bags',
+                steps: [
+                    {
+                        role: 'Lý do',
+                        vn: 'Túi nilon rất khó phân hủy, nằm lại trong đất và nước hàng trăm năm',
+                        en: 'plastic bags stay in nature for hundreds of years'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Khi đi chợ, đi siêu thị nên mang theo giỏ xách, túi vải hoặc túi giấy',
+                        en: 'use cloth bags or paper bags when shopping'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Giảm đáng kể lượng rác thải nhựa làm bẩn sông hồ và biển cả',
+                        en: 'reduce plastic waste in rivers and oceans'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Sử dụng các nguồn năng lượng thay thế',
+                coreEn: 'switch to clean energy sources',
+                steps: [
+                    {
+                        role: 'Lý do',
+                        vn: 'Đốt than đá hay xăng dầu thải ra rất nhiều khói bụi độc hại',
+                        en: 'burning coal and oil creates a lot of dirty smoke'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Tận dụng nguồn điện mặt trời và điện gió vì hoàn toàn tự nhiên',
+                        en: 'use solar energy or wind energy instead'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Giữ bầu không khí sạch sẽ và bảo vệ nguồn tài nguyên thiên nhiên',
+                        en: 'keep the air clean and protect natural resources'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Sử dụng phương tiện công cộng',
+                coreEn: 'travel by public transport more often',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Mọi người đi làm, đi học bằng xe buýt hoặc tàu điện thay vì xe riêng',
+                        en: 'take buses or trains instead of private cars and motorbikes'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Xe cộ cá nhân ngoài đường ít đi thì lượng khói bụi cũng giảm hẳn',
+                        en: 'fewer private vehicles on the road mean less smoke'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Vừa giảm ô nhiễm không khí, vừa bớt cảnh tắc đường giờ cao điểm',
+                        en: 'reduce both air pollution and traffic jams'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about some solutions to protect the environment.",
@@ -972,27 +1857,85 @@ const mockTests = [
         id: "test17",
         title: "Topic 17 🎓",
         topic: "Nowadays, many university students both study and work at the same time due to several reasons.",
-        promptEn: `<strong>Topic:</strong> Nowadays, many university students both study and work at the same time due to several reasons.<br>` +
-            generateMindmap('Study and work', 'cover living costs', 'Gain social experience', 'your own ideas', 'enhance time-management ability'),
-        promptVn: `<strong>Chủ đề:</strong> Ngày nay, nhiều sinh viên đại học vừa học vừa làm vì một số lý do.<br>` +
-            generateMindmap('Vừa học vừa làm', 'trang trải chi phí sinh hoạt', 'Tích lũy kinh nghiệm xã hội', 'ý tưởng của bạn', 'nâng cao khả năng quản lý thời gian'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Cover living costs', [
-                        { en: 'having a part-time job; work part-time; working while studying', vn: 'có một công việc bán thời gian; làm việc bán thời gian; vừa làm vừa học' },
-                        { en: 'pay for food, rent, transportation, and tuition fee', vn: 'chi trả cho thức ăn, tiền thuê nhà, đi lại, và học phí' },
-                        { en: 'earn money by themselves => reduce the financial pressure on their parents', vn: 'tự kiếm tiền => giảm bớt áp lực tài chính cho cha mẹ' }
-                    ])}
-                    ${generateVocabItem('02', 'Enhance time-management ability', [
-                        { en: 'arrange their schedule carefully => balance their work with their study, homework, and rest => become more organized + responsible', vn: 'sắp xếp lịch trình cẩn thận => cân bằng giữa công việc với việc học, bài tập về nhà, và nghỉ ngơi => trở nên có tổ chức + có trách nhiệm hơn' }
-                    ])}
-                    ${generateVocabItem('03', 'Gain social experience', [
-                        { en: 'working part-time => meet many people + communicate with customers => become more confident + communicate better + gain important soft-skills', vn: 'làm việc bán thời gian => gặp gỡ nhiều người + giao tiếp với khách hàng => trở nên tự tin hơn + giao tiếp tốt hơn + đạt được các kỹ năng mềm quan trọng' }
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '17',
+            topicEn: 'Nowadays, many university students both study and work at the same time due to several reasons.',
+            topicVn: 'Ngày nay, nhiều sinh viên đại học vừa học vừa làm vì một số lý do.',
+            centerEn: 'Study and work',
+            centerVn: 'Vừa học vừa làm',
+            idea1: { en: 'Cover living costs', vn: 'Trang trải chi phí sinh hoạt', tag: 'Động từ' },
+            idea2: { en: 'Enhance time-management ability', vn: 'Nâng cao khả năng quản lý thời gian', tag: 'Động từ' },
+            idea3: { en: 'Gain social experience', vn: 'Tích lũy kinh nghiệm xã hội', tag: 'Động từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Ngày nay, nhiều sinh viên đại học vừa học vừa làm vì một số lý do.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Trang trải chi phí sinh hoạt',
+                coreEn: 'earn money to cover daily living costs',
+                steps: [
+                    {
+                        role: 'Lý do',
+                        vn: 'Sinh viên xa nhà phải lo đủ khoản như tiền trọ, ăn uống, học phí',
+                        en: 'need money for rent, food, books, and school fees'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Đi làm thêm ở quán cà phê, cửa hàng hoặc đi dạy kèm buổi tối',
+                        en: 'work part-time at a cafe, a shop, or tutor kids'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Tự chi trả sinh hoạt cá nhân và đỡ đần gánh nặng tiền bạc cho bố mẹ',
+                        en: 'pay their own bills and reduce money stress on parents'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Nâng cao khả năng quản lý thời gian',
+                coreEn: 'learn to manage time much better',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Vừa phải lên lớp ở trường, vừa đi làm đúng ca nên lịch trình rất kín',
+                        en: 'busy with both university classes and work shifts'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Phải biết sắp xếp giờ học, làm bài tập và nghỉ ngơi sao cho hợp lý',
+                        en: 'plan their study, homework, and rest carefully'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Bỏ được thói quen lề mề, sống ngăn nắp và có kỷ luật hơn',
+                        en: 'stop wasting time and become more organized'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Tích lũy kinh nghiệm xã hội',
+                coreEn: 'gain useful social experience',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Bước ra đi làm được tiếp xúc thực tế với nhiều khách hàng và đồng nghiệp',
+                        en: 'meet and talk with many customers and coworkers'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Học cách giao tiếp khéo léo và bình tĩnh xử lý tình huống phát sinh',
+                        en: 'learn how to communicate well and solve real problems'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Mạnh dạn, tự tin hơn và dễ xin việc tốt sau khi tốt nghiệp',
+                        en: 'become more confident and find a good job easily later'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about why many university students study and work at the same time.",
@@ -1020,28 +1963,85 @@ const mockTests = [
         id: "test18",
         title: "Topic 18 🍔",
         topic: "Nowadays, many children are becoming overweight or obese. This can be due to several factors.",
-        promptEn: `<strong>Topic:</strong> Nowadays, many children are becoming overweight or obese. This can be due to several factors.<br>` +
-            generateMindmap('Overweight or obese', 'Eating unhealthy food', 'Increased screen time', 'your own ideas', 'Lack of physical activities'),
-        promptVn: `<strong>Chủ đề:</strong> Ngày nay, nhiều trẻ em đang trở nên thừa cân hoặc béo phì. Điều này có thể do một số yếu tố.<br>` +
-            generateMindmap('Thừa cân hoặc béo phì', 'Ăn thực phẩm không lành mạnh', 'Tăng thời gian sử dụng thiết bị điện tử', 'ý tưởng của bạn', 'Thiếu các hoạt động thể chất'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Eating unhealthy food', [
-                        { en: 'unhealthy food (fast food, sweets, soft drinks) => popular + delicious + easy to buy', vn: 'thực phẩm không lành mạnh (thức ăn nhanh, đồ ngọt, nước ngọt) => phổ biến + ngon miệng + dễ mua' },
-                        { en: 'contain a lot of sugar + fat + calories', vn: 'chứa nhiều đường + chất béo + calo' },
-                        { en: 'eat too often => gain weight quickly (get fat; become obese)', vn: 'ăn quá thường xuyên => tăng cân nhanh chóng (trở nên béo; trở nên béo phì)' }
-                    ])}
-                    ${generateVocabItem('02', 'Lack of physical activities', [
-                        { en: 'physical activities (play sports, do exercise)', vn: 'các hoạt động thể chất (chơi thể thao, tập thể dục)' },
-                        { en: 'spend most of their time studying or staying at home => get fat', vn: 'dành hầu hết thời gian để học hoặc ở nhà => trở nên béo' }
-                    ])}
-                    ${generateVocabItem('03', 'Increased screen time', [
-                        { en: 'screen time (spend many hours watching TV + using smartphones + playing computer games) => sit still for a long time + move less => become obese', vn: 'thời gian sử dụng thiết bị điện tử (dành nhiều giờ xem TV + sử dụng điện thoại thông minh + chơi trò chơi máy tính) => ngồi yên trong thời gian dài + ít vận động hơn => trở nên béo phì' }
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '18',
+            topicEn: 'Nowadays, many children are becoming overweight or obese. This can be due to several factors.',
+            topicVn: 'Ngày nay, nhiều trẻ em đang trở nên thừa cân hoặc béo phì. Điều này có thể do một số yếu tố.',
+            centerEn: 'Overweight or obese',
+            centerVn: 'Thừa cân hoặc béo phì',
+            idea1: { en: 'Eating unhealthy food', vn: 'Ăn thực phẩm không lành mạnh', tag: 'Danh động từ' },
+            idea2: { en: 'Lack of physical activities', vn: 'Thiếu các hoạt động thể chất', tag: 'Cụm danh từ' },
+            idea3: { en: 'Increased screen time', vn: 'Tăng thời gian sử dụng thiết bị điện tử', tag: 'Cụm danh từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Ngày nay, nhiều trẻ em đang trở nên thừa cân hoặc béo phì. Điều này có thể do một số yếu tố.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Ăn thực phẩm không lành mạnh',
+                coreEn: 'children eat too much unhealthy food',
+                steps: [
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Trẻ nhỏ rất thích gà rán, khoai tây chiên, bánh kẹo ngọt và trà sữa',
+                        en: 'kids love fast food like fried chicken, sweets, and soft drinks'
+                    },
+                    {
+                        role: 'Giải thích',
+                        vn: 'Đồ ăn nhanh rất dễ mua nhưng chứa quá nhiều đường và dầu mỡ',
+                        en: 'easy to buy, but contain too much sugar and fat'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Ăn thường xuyên làm cơ thể tích mỡ và tăng cân rất nhanh',
+                        en: 'eat them too often and gain weight quickly'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Thiếu các hoạt động thể chất',
+                coreEn: 'do not get enough physical exercise',
+                steps: [
+                    {
+                        role: 'Lý do',
+                        vn: 'Các em phải học cả ngày ở trường rồi tối lại đi học thêm kín lịch',
+                        en: 'study all day at school and attend extra classes'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Hầu như không có thời gian ra ngoài chạy nhảy, đá bóng hay tập thể dục',
+                        en: 'rarely go outside to play sports or do exercise'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Năng lượng thừa không được tiêu hao nên rất dễ bị thừa cân',
+                        en: 'do not burn calories and easily become overweight'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Tăng thời gian sử dụng thiết bị điện tử',
+                coreEn: 'spend too many hours on screens',
+                steps: [
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Rảnh rỗi là các bé ngồi lì xem tivi, lướt điện thoại hoặc chơi game',
+                        en: 'spend hours watching TV, using phones, or playing games'
+                    },
+                    {
+                        role: 'Giải thích',
+                        vn: 'Thói quen ngồi yên một chỗ quá lâu khiến cơ thể ngày càng lười vận động',
+                        en: 'sit still for a long time and move much less'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Lâu dần dẫn đến béo phì và ảnh hưởng xấu đến sức khỏe',
+                        en: 'become obese and harm their health over time'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about some factors causing children’s obesity.",
@@ -1069,28 +2069,85 @@ const mockTests = [
         id: "test19",
         title: "Topic 19 📉",
         topic: "Nowadays, more and more young people lose their jobs for different reasons.",
-        promptEn: `<strong>Topic:</strong> Nowadays, more and more young people lose their jobs for different reasons.<br>` +
-            generateMindmap('Lose jobs', 'Health issues', 'Poor attitude and work ethic', 'your own ideas', 'Lack of necessary skills'),
-        promptVn: `<strong>Chủ đề:</strong> Ngày nay, ngày càng có nhiều người trẻ mất việc làm vì nhiều lý do khác nhau.<br>` +
-            generateMindmap('Mất việc làm', 'Vấn đề sức khỏe', 'Thái độ và đạo đức làm việc kém', 'ý tưởng của bạn', 'Thiếu kỹ năng cần thiết'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Health issues', [
-                        { en: 'health issues (physical health issues; mental health issues)', vn: 'các vấn đề sức khỏe (các vấn đề sức khỏe thể chất; các vấn đề sức khỏe tinh thần)' },
-                        { en: 'often feel tired, stressed, or sick => cannot work effectively => (X) complete their tasks on time', vn: 'thường cảm thấy mệt mỏi, căng thẳng, hoặc ốm đau => không thể làm việc hiệu quả => (không) hoàn thành nhiệm vụ đúng hạn' }
-                    ])}
-                    ${generateVocabItem('02', 'Lack of necessary skills', [
-                        { en: '(X) have enough professional skills, technical skills, or soft skills for their jobs', vn: '(không) có đủ kỹ năng chuyên môn, kỹ năng kỹ thuật, hoặc kỹ năng mềm cho công việc của họ' },
-                        { en: '(X) use some computer programs + communicate well with customers => (X) meet the company\'s expectations', vn: '(không) sử dụng một số chương trình máy tính + giao tiếp tốt với khách hàng => (không) đáp ứng kỳ vọng của công ty' }
-                    ])}
-                    ${generateVocabItem('03', 'Poor attitude and work ethic', [
-                        { en: 'in the workplace, a positive attitude is very important', vn: 'ở nơi làm việc, một thái độ tích cực là rất quan trọng' },
-                        { en: 'some people => late + lazy + not willing to learn => create a bad impression on their managers and co-workers', vn: 'một số người => đi trễ + lười biếng + không sẵn sàng học hỏi => tạo ấn tượng xấu với quản lý và đồng nghiệp của họ' }
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '19',
+            topicEn: 'Nowadays, more and more young people lose their jobs for different reasons.',
+            topicVn: 'Ngày nay, ngày càng có nhiều người trẻ mất việc làm vì nhiều lý do khác nhau.',
+            centerEn: 'Lose jobs',
+            centerVn: 'Mất việc làm',
+            idea1: { en: 'Health issues', vn: 'Vấn đề sức khỏe', tag: 'Cụm danh từ' },
+            idea2: { en: 'Lack of necessary skills', vn: 'Thiếu kỹ năng cần thiết', tag: 'Cụm danh từ' },
+            idea3: { en: 'Poor attitude and work ethic', vn: 'Thái độ và đạo đức làm việc kém', tag: 'Cụm danh từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Ngày nay, ngày càng có nhiều người trẻ mất việc làm vì nhiều lý do khác nhau.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Vấn đề sức khỏe',
+                coreEn: 'suffer from physical or mental health problems',
+                steps: [
+                    {
+                        role: 'Lý do',
+                        vn: 'Nhiều bạn trẻ hay thức khuya, ăn uống thất thường và chịu áp lực lớn',
+                        en: 'often stay up late, eat poorly, and face heavy stress'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Cơ thể mệt mỏi, hay ốm vặt hoặc rơi vào căng thẳng tinh thần',
+                        en: 'feel tired, sick, or stressed out all the time'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Không đủ sức hoàn thành tốt công việc nên dễ bị cho nghỉ việc',
+                        en: 'cannot work well on time and may lose their job'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Thiếu kỹ năng cần thiết',
+                coreEn: 'lack important skills for the job',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Mới ra trường nên nhiều bạn chỉ biết lý thuyết mà thiếu kỹ năng thực tế',
+                        en: 'only know book theory and lack real work skills'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Chưa thạo máy tính văn phòng, ngoại ngữ hoặc lúng túng khi gặp khách hàng',
+                        en: 'weak at computer skills, English, or talking to customers'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Không theo kịp yêu cầu công việc của công ty',
+                        en: 'cannot meet the company\'s expectations'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Thái độ và đạo đức làm việc kém',
+                coreEn: 'have a poor attitude at work',
+                steps: [
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Đi làm hay trễ giờ, làm việc qua loa và ngại học hỏi cái mới',
+                        en: 'often come late, work carelessly, and refuse to learn'
+                    },
+                    {
+                        role: 'Giải thích',
+                        vn: 'Ở nơi làm việc, thái độ nghiêm túc rất được cấp trên coi trọng',
+                        en: 'a positive and serious attitude is very important at work'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Tạo ấn tượng xấu với sếp và đồng nghiệp nên sớm bị sa thải',
+                        en: 'make a bad impression on bosses and get fired'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about some reasons why young people lose their jobs.",
@@ -1118,28 +2175,85 @@ const mockTests = [
         id: "test20",
         title: "Topic 20 🤝",
         topic: "Good relationships at work are very important for employees and companies.",
-        promptEn: `<strong>Topic:</strong> Good relationships at work are very important for employees and companies.<br>` +
-            generateMindmap('Relationships at work', 'Higher productivity', 'Better collaboration', 'your own ideas', 'Higher level of job satisfaction'),
-        promptVn: `<strong>Chủ đề:</strong> Các mối quan hệ tốt ở nơi làm việc rất quan trọng đối với nhân viên và công ty.<br>` +
-            generateMindmap('Mối quan hệ ở nơi làm việc', 'Năng suất cao hơn', 'Sự cộng tác tốt hơn', 'ý tưởng của bạn', 'Mức độ hài lòng với công việc cao hơn'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Higher productivity', [
-                        { en: 'feel comfortable with their colleagues => focus better on their tasks', vn: 'cảm thấy thoải mái với đồng nghiệp của họ => tập trung tốt hơn vào nhiệm vụ của họ' },
-                        { en: 'more willing to help each other => complete their tasks more quickly and effectively', vn: 'sẵn sàng giúp đỡ lẫn nhau hơn => hoàn thành nhiệm vụ của họ nhanh chóng và hiệu quả hơn' }
-                    ])}
-                    ${generateVocabItem('02', 'Higher level of job satisfaction', [
-                        { en: 'employees often spend many hours at work every day => a friendly working environment (important)', vn: 'nhân viên thường dành nhiều giờ tại nơi làm việc mỗi ngày => một môi trường làm việc thân thiện (quan trọng)' },
-                        { en: 'co-workers (kind and supportive) => feel happier + less stressed', vn: 'đồng nghiệp (tốt bụng và hay giúp đỡ) => cảm thấy hạnh phúc hơn + ít căng thẳng hơn' }
-                    ])}
-                    ${generateVocabItem('03', 'Better collaboration', [
-                        { en: 'In many jobs => need to work in teams + share opinions with others', vn: 'Trong nhiều công việc => cần làm việc theo nhóm + chia sẻ ý kiến với người khác' },
-                        { en: 'employees => trust each other => communicate more easily + solve problems together => achieve better results', vn: 'nhân viên => tin tưởng lẫn nhau => giao tiếp dễ dàng hơn + cùng nhau giải quyết vấn đề => đạt được kết quả tốt hơn' }
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '20',
+            topicEn: 'Good relationships at work are very important for employees and companies.',
+            topicVn: 'Các mối quan hệ tốt ở nơi làm việc rất quan trọng đối với nhân viên và công ty.',
+            centerEn: 'Relationships at work',
+            centerVn: 'Mối quan hệ ở nơi làm việc',
+            idea1: { en: 'Higher productivity', vn: 'Năng suất cao hơn', tag: 'Cụm danh từ' },
+            idea2: { en: 'Higher level of job satisfaction', vn: 'Mức độ hài lòng với công việc cao hơn', tag: 'Cụm danh từ' },
+            idea3: { en: 'Better collaboration', vn: 'Sự cộng tác tốt hơn', tag: 'Cụm danh từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Các mối quan hệ tốt ở nơi làm việc rất quan trọng đối với nhân viên và công ty.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Năng suất cao hơn',
+                coreEn: 'help employees have higher productivity',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Khi quý mến đồng nghiệp, tinh thần thoải mái nên tập trung làm việc tốt hơn',
+                        en: 'feel comfortable with coworkers and focus better on tasks'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Gặp việc khó cũng dễ nhờ cậy và sẵn lòng phụ giúp lẫn nhau',
+                        en: 'willing to ask for help and support each other'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Giải quyết công việc nhanh gọn và hiệu quả hơn nhiều',
+                        en: 'finish work much faster and more effectively'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Mức độ hài lòng với công việc cao hơn',
+                coreEn: 'feel happier and more satisfied with the job',
+                steps: [
+                    {
+                        role: 'Lý do',
+                        vn: 'Nhân viên dành gần cả ngày ở văn phòng nên không khí làm việc rất quan trọng',
+                        en: 'spend many hours every day at the office'
+                    },
+                    {
+                        role: 'Giải thích',
+                        vn: 'Có đồng nghiệp tốt bụng, vui vẻ giúp mỗi ngày đi làm đều thấy nhẹ nhàng',
+                        en: 'kind and friendly coworkers make workdays enjoyable'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Bớt căng thẳng, yêu chỗ làm hơn và muốn gắn bó lâu dài',
+                        en: 'feel less stressed and stay with the company longer'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Sự cộng tác tốt hơn',
+                coreEn: 'improve teamwork and collaboration',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Khi đã hiểu và tin tưởng nhau thì trao đổi công việc rất cởi mở, dễ dàng',
+                        en: 'trust each other and share ideas easily'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Tránh được những hiểu lầm hay tranh cãi không đáng có khi làm chung dự án',
+                        en: 'avoid misunderstandings when working in teams'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Cùng nhau tháo gỡ khó khăn và mang lại kết quả chung tốt đẹp',
+                        en: 'solve problems together and achieve great results'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about the benefits of good workplace relationships.",
@@ -1167,27 +2281,85 @@ const mockTests = [
         id: "test21",
         title: "Topic 21 👥",
         topic: "Teamwork is very important in a professional working environment.",
-        promptEn: `<strong>Topic:</strong> Teamwork is very important in a professional working environment.<br>` +
-            generateMindmap('Teamwork', 'Shared responsibility', 'Diverse perspectives', 'your own ideas', 'Leadership development'),
-        promptVn: `<strong>Chủ đề:</strong> Làm việc nhóm rất quan trọng trong một môi trường làm việc chuyên nghiệp.<br>` +
-            generateMindmap('Làm việc nhóm', 'Chia sẻ trách nhiệm', 'Quan điểm đa dạng', 'ý tưởng của bạn', 'Phát triển năng lực lãnh đạo'),
-        vocab: `
-            <div class="vocab-section">
-                <div class="idea-cards">
-                    ${generateVocabItem('01', 'Shared responsibility', [
-                        { en: 'Teamwork (work in a team, work in groups) => (X) do everything alone', vn: 'Làm việc nhóm (làm việc trong một đội, làm việc theo nhóm) => (không) làm mọi thứ một mình' },
-                        { en: 'Each member => take care of a different task => the work becomes easier + complete the task more quickly', vn: 'Mỗi thành viên => đảm nhận một nhiệm vụ khác nhau => công việc trở nên dễ dàng hơn + hoàn thành nhiệm vụ nhanh chóng hơn' }
-                    ])}
-                    ${generateVocabItem('02', 'Leadership development', [
-                        { en: 'each member => have the opportunity to lead a small task + give instructions => learn how to make decisions + solve problems => very useful for their future career', vn: 'mỗi thành viên => có cơ hội dẫn dắt một nhiệm vụ nhỏ + đưa ra hướng dẫn => học cách đưa ra quyết định + giải quyết vấn đề => rất hữu ích cho sự nghiệp tương lai của họ' }
-                    ])}
-                    ${generateVocabItem('03', 'Diverse perspectives', [
-                        { en: 'each person => different strengths, different knowledge, different experience', vn: 'mỗi người => những điểm mạnh khác nhau, kiến thức khác nhau, kinh nghiệm khác nhau' },
-                        { en: 'team members => share their ideas => view the problem in many different perspectives => find the best solution', vn: 'các thành viên trong nhóm => chia sẻ ý tưởng của họ => nhìn nhận vấn đề ở nhiều quan điểm khác nhau => tìm ra giải pháp tốt nhất' }
-                    ])}
-                </div>
-            </div>
-        `,
+        promptEn: generatePromptCard({
+            testNumber: '21',
+            topicEn: 'Teamwork is very important in a professional working environment.',
+            topicVn: 'Làm việc nhóm rất quan trọng trong một môi trường làm việc chuyên nghiệp.',
+            centerEn: 'Teamwork',
+            centerVn: 'Làm việc nhóm',
+            idea1: { en: 'Shared responsibility', vn: 'Chia sẻ trách nhiệm', tag: 'Cụm danh từ' },
+            idea2: { en: 'Leadership development', vn: 'Phát triển năng lực lãnh đạo', tag: 'Cụm danh từ' },
+            idea3: { en: 'Diverse perspectives', vn: 'Quan điểm đa dạng', tag: 'Cụm danh từ' }
+        }),
+        promptVn: `<strong>Chủ đề:</strong> Làm việc nhóm rất quan trọng trong một môi trường làm việc chuyên nghiệp.<br>`,
+        vocab: generateIdeaExpansion([
+            {
+                num: '1',
+                titleVn: 'Chia sẻ trách nhiệm',
+                coreEn: 'share work and responsibility together',
+                steps: [
+                    {
+                        role: 'Lý do',
+                        vn: 'Công việc ở công ty thường nhiều và lớn, một người ôm hết sẽ quá tải',
+                        en: 'do not have to do everything alone'
+                    },
+                    {
+                        role: 'Giải thích',
+                        vn: 'Mỗi thành viên nhận một phần việc phù hợp với khả năng của mình',
+                        en: 'each member takes care of a different task'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Công việc nhẹ nhàng hơn và hoàn thành kịp tiến độ',
+                        en: 'work becomes easier and finishes much faster'
+                    }
+                ]
+            },
+            {
+                num: '2',
+                titleVn: 'Phát triển năng lực lãnh đạo',
+                coreEn: 'help employees develop leadership skills',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Nhân viên có cơ hội tập dẫn dắt một nhóm nhỏ hoặc phụ trách đầu việc',
+                        en: 'have chances to lead a small task or group'
+                    },
+                    {
+                        role: 'Ví dụ',
+                        vn: 'Học cách phân công việc, hướng dẫn mọi người và đưa ra quyết định',
+                        en: 'learn how to give instructions and make decisions'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Rất có ích để phát triển và thăng tiến trong sự nghiệp sau này',
+                        en: 'very useful for their future career'
+                    }
+                ]
+            },
+            {
+                num: '3',
+                titleVn: 'Quan điểm đa dạng',
+                coreEn: 'bring many different ideas and viewpoints',
+                steps: [
+                    {
+                        role: 'Giải thích',
+                        vn: 'Mỗi người trong nhóm có thế mạnh, kiến thức và kinh nghiệm khác nhau',
+                        en: 'each person has different strengths and experience'
+                    },
+                    {
+                        role: 'Chi tiết',
+                        vn: 'Khi cùng bàn bạc sẽ nhìn vấn đề từ nhiều góc độ và nảy ra nhiều ý hay',
+                        en: 'share ideas and look at problems in many ways'
+                    },
+                    {
+                        role: 'Kết quả',
+                        vn: 'Tìm ra cách giải quyết tối ưu nhất cho công việc chung',
+                        en: 'find the best solution and improve work quality'
+                    }
+                ]
+            }
+        ]),
         sample: [
             {
                 en: "Today, I'd like to talk about the benefits of teamwork in a professional environment.",
