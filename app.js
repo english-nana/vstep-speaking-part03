@@ -185,55 +185,33 @@ function loadTest(id, element) {
     const sampleContainer = document.getElementById('sample-container');
     if (sampleContainer) {
         sampleContainer.innerHTML = ''; // Xóa nội dung cũ
-        if(test.sample && test.sample.length > 0) {
-            test.sample.forEach((para, index) => {
-                const paraDiv = document.createElement('div');
-                paraDiv.className = 'paragraph-wrapper';
-                
-                let enHtml = para.en;
-                
-                if (index === 0) {
-                    const match = enHtml.match(/^Today,\s+I(?:'d|\s+would)\s+like\s+to\s+talk\s+about\s+/i);
-                    if (match) {
-                        const prefix = match[0];
-                        const remaining = enHtml.substring(prefix.length);
-                        enHtml = prefix + `<span style="color: #ff003c; text-shadow: 0 0 5px rgba(255,0,60,0.5); font-weight: bold;">${remaining}</span>`;
-                    }
-                } else if (index >= 1 && index <= 3) {
-                    const firstDotIndex = enHtml.indexOf('. ');
-                    if (firstDotIndex !== -1) {
-                        const firstSentence = enHtml.substring(0, firstDotIndex + 1);
-                        const rest = enHtml.substring(firstDotIndex + 1);
-                        enHtml = `<span style="color: #0066ff; text-shadow: 0 0 5px rgba(0,102,255,0.4); font-weight: bold;">${firstSentence}</span> ` + rest;
-                    } else {
-                        enHtml = `<span style="color: #0066ff; text-shadow: 0 0 5px rgba(0,102,255,0.4); font-weight: bold;">${enHtml}</span>`;
-                    }
-                } else if (index === test.sample.length - 1) {
-                    const match = enHtml.match(/To sum up, it[’']s true that/i);
-                    if (match) {
-                        const prefix = match[0];
-                        const idx = enHtml.indexOf(prefix) + prefix.length;
-                        const remaining = enHtml.substring(idx);
-                        enHtml = enHtml.substring(0, idx) + `<span style="color: #ff003c; text-shadow: 0 0 5px rgba(255,0,60,0.5); font-weight: bold;">${remaining}</span>`;
-                    }
-                }
-                
-                const enP = document.createElement('p');
-                enP.className = 'paragraph-en clickable-text';
-                enP.innerHTML = enHtml;
-                enP.onclick = () => {
-                    const vnP = paraDiv.querySelector('.paragraph-vn');
-                    vnP.style.display = (vnP.style.display === 'block') ? 'none' : 'block';
-                };
-                
-                const vnP = document.createElement('p');
-                vnP.className = 'paragraph-vn translation';
-                vnP.innerHTML = para.vn;
-                
-                paraDiv.appendChild(enP);
-                paraDiv.appendChild(vnP);
-                sampleContainer.appendChild(paraDiv);
-            });
+        if (Array.isArray(test.sample) && test.sample.length > 0) {
+            renderSampleParagraphs(test.sample, sampleContainer);
+        } else if (test.sample && !Array.isArray(test.sample) && (test.sample.b1 || test.sample.b2)) {
+            const tabsWrapper = document.createElement('div');
+            tabsWrapper.className = 'level-tabs-wrapper';
+            tabsWrapper.innerHTML = `
+                <div class="level-switcher-bar">
+                    <div class="level-segmented" role="tablist" aria-label="Chọn trình độ">
+                        <button type="button" class="level-tab-btn level-b1 active" data-target-level="b1" onclick="window.switchLevelTab(this, 'b1')">
+                            <span class="level-dot"></span>
+                            <span>Level B1</span>
+                        </button>
+                        <button type="button" class="level-tab-btn level-b2" data-target-level="b2" onclick="window.switchLevelTab(this, 'b2')">
+                            <span class="level-dot"></span>
+                            <span>Level B2</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="level-pane active" data-level-pane="b1"></div>
+                <div class="level-pane" data-level-pane="b2"></div>
+            `;
+            sampleContainer.appendChild(tabsWrapper);
+
+            const paneB1 = tabsWrapper.querySelector('[data-level-pane="b1"]');
+            const paneB2 = tabsWrapper.querySelector('[data-level-pane="b2"]');
+            if (test.sample.b1 && paneB1) renderSampleParagraphs(test.sample.b1, paneB1);
+            if (test.sample.b2 && paneB2) renderSampleParagraphs(test.sample.b2, paneB2);
         }
     }
 
@@ -302,6 +280,74 @@ function loadTest(id, element) {
         sampleCard.style.display = 'block';
     }
 }
+
+// Render danh sách đoạn văn bài mẫu
+function renderSampleParagraphs(sampleList, targetEl) {
+    if (!sampleList || !targetEl) return;
+    sampleList.forEach((para, index) => {
+        const paraDiv = document.createElement('div');
+        paraDiv.className = 'paragraph-wrapper';
+
+        let enHtml = para.en;
+
+        if (index === 0) {
+            const match = enHtml.match(/^Today,\s+I(?:'d|’d|\s+would)\s+like\s+to\s+talk\s+about\s+/i);
+            if (match) {
+                const prefix = match[0];
+                const remaining = enHtml.substring(prefix.length);
+                enHtml = prefix + `<span style="color: #ff003c; text-shadow: 0 0 5px rgba(255,0,60,0.5); font-weight: bold;">${remaining}</span>`;
+            }
+        } else if (index >= 1 && index <= 3) {
+            const firstDotIndex = enHtml.indexOf('. ');
+            if (firstDotIndex !== -1) {
+                const firstSentence = enHtml.substring(0, firstDotIndex + 1);
+                const rest = enHtml.substring(firstDotIndex + 1);
+                enHtml = `<span style="color: #0066ff; text-shadow: 0 0 5px rgba(0,102,255,0.4); font-weight: bold;">${firstSentence}</span> ` + rest;
+            } else {
+                enHtml = `<span style="color: #0066ff; text-shadow: 0 0 5px rgba(0,102,255,0.4); font-weight: bold;">${enHtml}</span>`;
+            }
+        } else if (index === sampleList.length - 1) {
+            const match = enHtml.match(/(?:To sum up|In conclusion),\s*(?:it[’']s\s+(?:true|clear)\s+that|I\s+strongly\s+believe\s+that)/i);
+            if (match) {
+                const prefix = match[0];
+                const idx = enHtml.indexOf(prefix) + prefix.length;
+                const remaining = enHtml.substring(idx);
+                enHtml = enHtml.substring(0, idx) + `<span style="color: #ff003c; text-shadow: 0 0 5px rgba(255,0,60,0.5); font-weight: bold;">${remaining}</span>`;
+            }
+        }
+
+        const enP = document.createElement('p');
+        enP.className = 'paragraph-en clickable-text';
+        enP.innerHTML = enHtml;
+        enP.onclick = () => {
+            const vnP = paraDiv.querySelector('.paragraph-vn');
+            vnP.style.display = (vnP.style.display === 'block') ? 'none' : 'block';
+        };
+
+        const vnP = document.createElement('p');
+        vnP.className = 'paragraph-vn translation';
+        vnP.innerHTML = para.vn;
+
+        paraDiv.appendChild(enP);
+        paraDiv.appendChild(vnP);
+        targetEl.appendChild(paraDiv);
+    });
+}
+
+// Chuyển đổi tab Level B1 / Level B2
+window.switchLevelTab = function(btnEl, level) {
+    if (!btnEl) return;
+    const wrapper = btnEl.closest('.level-tabs-wrapper');
+    if (!wrapper) return;
+
+    wrapper.querySelectorAll('.level-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-target-level') === level);
+    });
+
+    wrapper.querySelectorAll('.level-pane').forEach(pane => {
+        pane.classList.toggle('active', pane.getAttribute('data-level-pane') === level);
+    });
+};
 
 // --- TƯƠNG TÁC MINDMAP & KHUNG ĐỀ BÀI MỚI ---
 window.toggleNodeVn = function(nodeEl) {

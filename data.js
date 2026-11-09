@@ -53,7 +53,7 @@ const ROLE_STYLE_MAP = {
     'Tác động': 'role-result'
 };
 
-const generateIdeaExpansion = (ideas) => {
+const renderIdeaExpansionSection = (ideas) => {
     const cardsHtml = ideas.map(idea => {
         const stepsHtml = idea.steps.map((step, idx) => {
             const roleClass = ROLE_STYLE_MAP[step.role] || 'role-explain';
@@ -104,6 +104,34 @@ const generateIdeaExpansion = (ideas) => {
             </div>
         </div>
     `;
+};
+
+const generateIdeaExpansion = (ideas) => {
+    if (!Array.isArray(ideas) && ideas && (ideas.b1 || ideas.b2)) {
+        return `
+            <div class="level-tabs-wrapper">
+                <div class="level-switcher-bar">
+                    <div class="level-segmented" role="tablist" aria-label="Chọn trình độ">
+                        <button type="button" class="level-tab-btn level-b1 active" data-target-level="b1" onclick="window.switchLevelTab(this, 'b1')">
+                            <span class="level-dot"></span>
+                            <span>Level B1</span>
+                        </button>
+                        <button type="button" class="level-tab-btn level-b2" data-target-level="b2" onclick="window.switchLevelTab(this, 'b2')">
+                            <span class="level-dot"></span>
+                            <span>Level B2</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="level-pane active" data-level-pane="b1">
+                    ${renderIdeaExpansionSection(ideas.b1 || [])}
+                </div>
+                <div class="level-pane" data-level-pane="b2">
+                    ${renderIdeaExpansionSection(ideas.b2 || [])}
+                </div>
+            </div>
+        `;
+    }
+    return renderIdeaExpansionSection(ideas);
 };
 
 const mockTests = [
@@ -1232,96 +1260,190 @@ const mockTests = [
             idea3: { en: 'Multitasking skills', vn: 'Kỹ năng đa nhiệm', tag: 'Cụm danh từ' }
         }),
         promptVn: `<strong>Chủ đề:</strong> Phụ nữ nên được khuyến khích trở thành những nhà lãnh đạo.<br>`,
-        vocab: generateIdeaExpansion([
-            {
-                num: '1',
-                titleVn: 'Giao tiếp tốt',
-                coreEn: 'women often have good communication skills',
-                steps: [
-                    {
-                        role: 'Giải thích',
-                        vn: 'Phụ nữ thường khéo léo, biết kiên nhẫn lắng nghe và nói chuyện nhẹ nhàng',
-                        en: 'good at listening patiently and speaking gently'
-                    },
-                    {
-                        role: 'Chi tiết',
-                        vn: 'Dễ thấu hiểu tâm tư, cảm xúc của các thành viên trong nhóm',
-                        en: 'easily understand other people\'s feelings'
-                    },
-                    {
-                        role: 'Kết quả',
-                        vn: 'Gắn kết mọi người lại gần nhau và giữ hòa khí nơi làm việc',
-                        en: 'connect people and build strong relationships'
-                    }
-                ]
-            },
-            {
-                num: '2',
-                titleVn: 'Ra quyết định cẩn thận',
-                coreEn: 'make very careful decisions',
-                steps: [
-                    {
-                        role: 'Giải thích',
-                        vn: 'Họ ít khi nóng vội mà luôn suy nghĩ thấu đáo trước khi quyết định',
-                        en: 'think carefully instead of deciding in a hurry'
-                    },
-                    {
-                        role: 'Chi tiết',
-                        vn: 'Biết lắng nghe nhiều ý kiến khác nhau và tính trước các rủi ro',
-                        en: 'listen to different ideas and consider possible risks'
-                    },
-                    {
-                        role: 'Kết quả',
-                        vn: 'Giúp tập thể và công ty tránh được những sai lầm đáng tiếc',
-                        en: 'help the team avoid costly mistakes'
-                    }
-                ]
-            },
-            {
-                num: '3',
-                titleVn: 'Kỹ năng đa nhiệm',
-                coreEn: 'good at doing many tasks at the same time',
-                steps: [
-                    {
-                        role: 'Giải thích',
-                        vn: 'Phụ nữ có khả năng sắp xếp và quán xuyến nhiều đầu việc cùng lúc',
-                        en: 'organize and handle many tasks at once'
-                    },
-                    {
-                        role: 'Ví dụ',
-                        vn: 'Vừa giải quyết tốt việc công ty, vừa chăm lo chu đáo cho gia đình',
-                        en: 'do office work well while taking care of their family'
-                    },
-                    {
-                        role: 'Kết quả',
-                        vn: 'Điều hành công việc bận rộn một cách ngăn nắp và hiệu quả',
-                        en: 'manage different duties smoothly and effectively'
-                    }
-                ]
-            }
-        ]),
-        sample: [
-            {
-                en: "Today, I'd like to talk about the reasons why women should become leaders.",
-                vn: "Hôm nay, tôi muốn nói về những lý do tại sao phụ nữ nên trở thành những nhà lãnh đạo."
-            },
-            {
-                en: "Firstly, women often have good communication skills. This is because they are usually good at listening and expressing their ideas clearly. They can understand others’ feelings and build strong relationships.",
-                vn: "Đầu tiên, phụ nữ thường có kỹ năng giao tiếp tốt. Điều này là do họ thường giỏi lắng nghe và bày tỏ ý tưởng của mình một cách rõ ràng. Họ có thể hiểu cảm xúc của người khác và xây dựng các mối quan hệ bền chặt."
-            },
-            {
-                en: "Moreover, women are good at careful decision making. They often think carefully before making a decision and consider different points of view. This helps avoid mistakes.",
-                vn: "Hơn nữa, phụ nữ giỏi trong việc ra quyết định cẩn thận. Họ thường suy nghĩ cẩn thận trước khi đưa ra quyết định và xem xét các quan điểm khác nhau. Điều này giúp tránh những sai lầm."
-            },
-            {
-                en: "Finally, women usually have strong multitasking skills. They can manage many tasks at the same time and still do them well. For example, a woman may handle work responsibilities while also taking care of her family. Therefore, she can manage different duties effectively.",
-                vn: "Cuối cùng, phụ nữ thường có kỹ năng đa nhiệm mạnh mẽ. Họ có thể quản lý nhiều công việc cùng lúc và vẫn làm tốt chúng. Ví dụ, một người phụ nữ có thể xử lý các trách nhiệm công việc trong khi cũng chăm sóc gia đình của cô ấy. Do đó, cô ấy có thể quản lý các nhiệm vụ khác nhau một cách hiệu quả."
-            },
-            {
-                en: "To sum up, it’s clear that women should be encouraged to become leaders.",
-                vn: "Tóm lại, rõ ràng là phụ nữ nên được khuyến khích trở thành những nhà lãnh đạo."
-            }
-        ]
+        vocab: generateIdeaExpansion({
+            b1: [
+                {
+                    num: '1',
+                    titleVn: 'Giao tiếp tốt',
+                    coreEn: 'women often have good communication skills',
+                    steps: [
+                        {
+                            role: 'Giải thích',
+                            vn: 'Dễ dàng nói chuyện với người khác',
+                            en: 'talk to other people easily'
+                        },
+                        {
+                            role: 'Chi tiết',
+                            vn: 'Hiểu được cảm xúc của họ',
+                            en: 'understand their feelings'
+                        },
+                        {
+                            role: 'Kết quả',
+                            vn: 'Giúp làm việc tốt với nhóm và giải quyết các vấn đề',
+                            en: 'work well with their team and solve problems'
+                        }
+                    ]
+                },
+                {
+                    num: '2',
+                    titleVn: 'Ra quyết định cẩn thận',
+                    coreEn: 'women can make careful decisions',
+                    steps: [
+                        {
+                            role: 'Giải thích',
+                            vn: 'Trước khi quyết định, thường suy nghĩ về các lựa chọn khác nhau',
+                            en: 'before making a decision, think about different choices'
+                        },
+                        {
+                            role: 'Chi tiết',
+                            vn: 'Nghĩ về những kết quả có thể xảy ra',
+                            en: 'think about possible results'
+                        },
+                        {
+                            role: 'Kết quả',
+                            vn: 'Giúp công ty của họ tránh được các vấn đề',
+                            en: 'help their companies avoid problems'
+                        }
+                    ]
+                },
+                {
+                    num: '3',
+                    titleVn: 'Kỹ năng đa nhiệm',
+                    coreEn: 'women are good at doing many things at the same time',
+                    steps: [
+                        {
+                            role: 'Ví dụ',
+                            vn: 'Có thể tham dự các cuộc họp và quản lý công việc',
+                            en: 'attend meetings and manage their work'
+                        },
+                        {
+                            role: 'Chi tiết',
+                            vn: 'Đồng thời giúp đỡ các thành viên trong nhóm',
+                            en: 'help their team members'
+                        },
+                        {
+                            role: 'Kết quả',
+                            vn: 'Đây là một phẩm chất quan trọng đối với một nhà lãnh đạo',
+                            en: 'an important quality for a leader'
+                        }
+                    ]
+                }
+            ],
+            b2: [
+                {
+                    num: '1',
+                    titleVn: 'Giao tiếp tốt',
+                    coreEn: 'women often have excellent communication skills',
+                    steps: [
+                        {
+                            role: 'Giải thích',
+                            vn: 'Biết lắng nghe người khác, chia sẻ ý tưởng và cân nhắc các ý kiến khác nhau',
+                            en: 'listen to others, share their ideas and consider different opinions'
+                        },
+                        {
+                            role: 'Kết quả',
+                            vn: 'Xây dựng mối quan hệ tốt với các thành viên trong nhóm',
+                            en: 'build good relationships with their team members'
+                        },
+                        {
+                            role: 'Tác động',
+                            vn: 'Tạo ra một môi trường làm việc thân thiện',
+                            en: 'create a friendly working environment'
+                        }
+                    ]
+                },
+                {
+                    num: '2',
+                    titleVn: 'Ra quyết định cẩn thận',
+                    coreEn: 'women are often careful when making decisions',
+                    steps: [
+                        {
+                            role: 'Giải thích',
+                            vn: 'Thường xem xét các phương án khác nhau trước khi hành động',
+                            en: 'consider different options before taking action'
+                        },
+                        {
+                            role: 'Chi tiết',
+                            vn: 'Suy nghĩ về những kết quả có thể xảy ra',
+                            en: 'think about the possible results'
+                        },
+                        {
+                            role: 'Kết quả',
+                            vn: 'Tránh sai lầm không đáng có và chọn giải pháp tốt nhất cho nhóm hoặc công ty',
+                            en: 'avoid unnecessary mistakes and choose the best solutions for their teams or companies'
+                        }
+                    ]
+                },
+                {
+                    num: '3',
+                    titleVn: 'Kỹ năng đa nhiệm',
+                    coreEn: 'women are often good at multitasking',
+                    steps: [
+                        {
+                            role: 'Giải thích',
+                            vn: 'Quản lý các nhiệm vụ khác nhau, giải quyết vấn đề và hỗ trợ thành viên cùng lúc',
+                            en: 'manage different tasks, solve problems and support their team members at the same time'
+                        },
+                        {
+                            role: 'Ví dụ',
+                            vn: 'Một nữ quản lý có thể phải dự họp, kiểm tra việc của nhóm và làm việc với khách hàng trong cùng một ngày',
+                            en: 'attend meetings, check her team\'s work and deal with customers on the same day'
+                        },
+                        {
+                            role: 'Kết quả',
+                            vn: 'Đây là một phẩm chất quan trọng của một người lãnh đạo',
+                            en: 'an important quality of a leader'
+                        }
+                    ]
+                }
+            ]
+        }),
+        sample: {
+            b1: [
+                {
+                    en: "Today, I’d like to talk about the reasons why I agree that women should be encouraged to become leaders.",
+                    vn: "Hôm nay, tôi muốn nói về những lý do tại sao tôi đồng ý rằng phụ nữ nên được khuyến khích trở thành những nhà lãnh đạo."
+                },
+                {
+                    en: "Firstly, women often have good communication skills. They can talk to other people easily and understand their feelings. This helps them work well with their team and solve problems.",
+                    vn: "Đầu tiên, phụ nữ thường có kỹ năng giao tiếp tốt. Họ có thể nói chuyện với người khác một cách dễ dàng và hiểu được cảm xúc của họ. Điều này giúp họ làm việc tốt với nhóm của mình và giải quyết các vấn đề."
+                },
+                {
+                    en: "Secondly, women can make careful decisions. Before making a decision, they often think about different choices and possible results. This can help their companies avoid problems.",
+                    vn: "Thứ hai, phụ nữ có thể đưa ra những quyết định cẩn thận. Trước khi đưa ra quyết định, họ thường suy nghĩ về các lựa chọn khác nhau và những kết quả có thể xảy ra. Điều này có thể giúp công ty của họ tránh được các vấn đề."
+                },
+                {
+                    en: "Finally, women are good at doing many things at the same time. For example, they can attend meetings, manage their work and help their team members. This is an important quality for a leader.",
+                    vn: "Cuối cùng, phụ nữ giỏi làm nhiều việc cùng một lúc. Ví dụ, họ có thể tham dự các cuộc họp, quản lý công việc và giúp đỡ các thành viên trong nhóm. Đây là một phẩm chất quan trọng đối với một người lãnh đạo."
+                },
+                {
+                    en: "In conclusion, it’s true that women should be encouraged to become leaders.",
+                    vn: "Tóm lại, đúng là phụ nữ nên được khuyến khích trở thành những nhà lãnh đạo."
+                }
+            ],
+            b2: [
+                {
+                    en: "Today, I’d like to talk about the reasons why women should be encouraged to take on leadership positions.",
+                    vn: "Hôm nay, tôi muốn nói về những lý do tại sao phụ nữ nên được khuyến khích đảm nhận các vị trí lãnh đạo."
+                },
+                {
+                    en: "First of all, women often have excellent communication skills. They know how to listen to others, share their ideas and consider different opinions. As a result, they can build good relationships with their team members and create a friendly working environment.",
+                    vn: "Trước hết, phụ nữ thường có kỹ năng giao tiếp xuất sắc. Họ biết cách lắng nghe người khác, chia sẻ ý tưởng của mình và cân nhắc các ý kiến khác nhau. Kết quả là, họ có thể xây dựng mối quan hệ tốt đẹp với các thành viên trong nhóm và tạo ra một môi trường làm việc thân thiện."
+                },
+                {
+                    en: "Another reason is that women are often careful when making decisions. They usually consider different options and think about the possible results before taking action. This helps them avoid unnecessary mistakes and choose the best solutions for their teams or companies.",
+                    vn: "Một lý do khác là phụ nữ thường cẩn thận khi đưa ra quyết định. Họ thường xem xét các phương án khác nhau và suy nghĩ về những kết quả có thể xảy ra trước khi hành động. Điều này giúp họ tránh được những sai lầm không đáng có và lựa chọn những giải pháp tốt nhất cho nhóm hoặc công ty của mình."
+                },
+                {
+                    en: "Finally, women are often good at multitasking. They can manage different tasks, solve problems and support their team members at the same time. For example, a female manager may have to attend meetings, check her team's work and deal with customers on the same day. This is an important quality of a leader.",
+                    vn: "Cuối cùng, phụ nữ thường giỏi làm nhiều việc cùng lúc. Họ có thể quản lý các nhiệm vụ khác nhau, giải quyết vấn đề và hỗ trợ các thành viên trong nhóm cùng một lúc. Ví dụ, một nữ quản lý có thể phải tham dự các cuộc họp, kiểm tra công việc của nhóm và làm việc với khách hàng trong cùng một ngày. Đây là một phẩm chất quan trọng của một người lãnh đạo."
+                },
+                {
+                    en: "In conclusion, I strongly believe that women should be given more opportunities to become leaders.",
+                    vn: "Tóm lại, tôi hoàn toàn tin rằng phụ nữ nên được trao nhiều cơ hội hơn để trở thành những nhà lãnh đạo."
+                }
+            ]
+        }
     },
     {
         id: "test12",
